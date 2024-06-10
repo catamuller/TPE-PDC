@@ -7,8 +7,8 @@ SMTPD_OBJS:= lib/args.o main.o
 all: $(SMTPD_CLI)
 
 args.o: args.h
-	
-$(EXEC): $(SMTPD_OBJS)
+
+$(SMTPD_CLI): $(SMTPD_OBJS)
 	$(CC) $(CFLAGS) $(SMTPD_OBJS) -o $(SMTPD_CLI)
 
 clean:
