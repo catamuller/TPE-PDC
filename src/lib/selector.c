@@ -93,8 +93,7 @@ finally:
     return ret;
 }
 
-selector_status
-selector_close(void) {
+selector_status selector_close(void) {
     // Nada para liberar.
     // TODO(juan): podriamos reestablecer el handler de la señal.
     return SELECTOR_SUCCESS;

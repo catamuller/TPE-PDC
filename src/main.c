@@ -82,13 +82,13 @@ int main(int argc, char ** argv) {
     .handle_close = NULL,
   };
 
-  ss = selector_register(selector,master_sockets[0],&smtp,OP_READ,NULL);// 2 ss?
+  ss = selector_register(selector,master_sockets[0],&smtp,OP_READ,NULL);
   if (ss != SELECTOR_SUCCESS) {
     err_msg = "Unable to register FD for IPv4.";
     goto finally;
   }
 
-  ss = selector_register(selector,master_sockets[1],&smtp,OP_READ,NULL);// 2 ss?
+  ss = selector_register(selector,master_sockets[1],&smtp,OP_READ,NULL);
   if (ss != SELECTOR_SUCCESS) {
     err_msg = "Unable to register FD for IPv6.";
     goto finally;
@@ -107,10 +107,7 @@ int main(int argc, char ** argv) {
 
   finally:
   if(ss != SELECTOR_SUCCESS) {
-    fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "": err_msg,
-                                  ss == SELECTOR_IO
-                                  ? strerror(errno)
-                                  : selector_error(ss));
+    fprintf(stderr, "%s: %s\n", (err_msg == NULL) ? "": err_msg, ss == SELECTOR_IO ? strerror(errno): selector_error(ss));
   } else if(err_msg) {
     perror(err_msg);
   }
