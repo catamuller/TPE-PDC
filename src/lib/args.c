@@ -7,13 +7,12 @@
 
 #include "headers/args.h"
 
-static unsigned short
-port(const char *s) {
+static unsigned short port(const char *s) {
      char *end     = 0;
      const long sl = strtol(s, &end, 10);
 
-     if (end == s|| '\0' != *end
-        || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
+     if (end == s || '\0' != *end
+        || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) 
         || sl < 0 || sl > USHRT_MAX) {
          fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
          exit(1);
@@ -22,8 +21,7 @@ port(const char *s) {
      return (unsigned short)sl;
 }
 
-static void
-user(char *s, struct users *user) {
+static void user(char *s, struct user *user) {
     char *p = strchr(s, ':');
     if(p == NULL) {
         fprintf(stderr, "password not found\n");
@@ -37,33 +35,27 @@ user(char *s, struct users *user) {
 
 }
 
-static void
-version(void) {
-    fprintf(stderr, "socks5v version 0.0\n"
-                    "ITBA Protocolos de Comunicación 2020/1 -- Grupo X\n"
+static void version(void) {
+    fprintf(stderr, "smtpd version 0.0\n"
+                    "ITBA Protocolos de Comunicación 2024/1 -- Grupo 8\n"
                     "AQUI VA LA LICENCIA\n");
 }
 
-static void
-usage(const char *progname) {
+static void usage(const char *progname) {
     fprintf(stderr,
         "Usage: %s [OPTION]...\n"
         "\n"
         "   -h               Imprime la ayuda y termina.\n"
-        "   -l <SOCKS addr>  Dirección donde servirá el proxy SOCKS.\n"
-        "   -L <conf  addr>  Dirección donde servirá el servicio de management.\n"
-        "   -p <SOCKS port>  Puerto entrante conexiones SOCKS.\n"
+        "   -l <addr>        Dirección donde servirá el servidor SMTP.\n"
         "   -P <conf port>   Puerto entrante conexiones configuracion\n"
         "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
-        "   -v               Imprime información sobre la versión versión y termina.\n"
-
+        "   -v               Imprime información sobre la versión y termina.\n"
         "\n",
         progname);
     exit(1);
 }
 
-void 
-parse_args(const int argc, char **argv, struct socks5args *args) {
+void parse_args(const int argc, char **argv, struct smtpargs *args) {
     memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
 
     args->socks_addr = "0.0.0.0";
@@ -83,7 +75,7 @@ parse_args(const int argc, char **argv, struct socks5args *args) {
             { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "hl:L:Np:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "h:l:P:u:v", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -93,15 +85,6 @@ parse_args(const int argc, char **argv, struct socks5args *args) {
                 break;
             case 'l':
                 args->socks_addr = optarg;
-                break;
-            case 'L':
-                args->mng_addr = optarg;
-                break;
-            case 'N':
-                args->disectors_enabled = false;
-                break;
-            case 'p':
-                args->socks_port = port(optarg);
                 break;
             case 'P':
                 args->mng_port   = port(optarg);

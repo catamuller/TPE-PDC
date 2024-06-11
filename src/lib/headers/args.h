@@ -3,14 +3,14 @@
 
 #include <stdbool.h>
 
-#define MAX_USERS 10
+#define MAX_USERS 600
 
-struct users {
+struct user {
     char *name;
     char *pass;
 };
 
-struct socks5args {
+struct smtpargs {
 	char *			mail_dir;
 
     char           *socks_addr;
@@ -21,7 +21,7 @@ struct socks5args {
 
     bool            disectors_enabled;
 
-    struct users    users[MAX_USERS];
+    struct user    users[MAX_USERS];
 };
 
 /**
@@ -29,7 +29,6 @@ struct socks5args {
  * args con defaults o la seleccion humana. Puede cortar
  * la ejecución.
  */
-void 
-parse_args(const int argc, char **argv, struct socks5args *args);
+void parse_args(const int argc, char **argv, struct smtpargs *args);
 
 #endif

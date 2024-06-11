@@ -7,6 +7,7 @@
 #include <assert.h> // :)
 #include <errno.h>  // :)
 #include <pthread.h>
+#include <signal.h>
 
 #include <stdint.h> // SIZE_MAX
 #include <unistd.h>
@@ -48,8 +49,7 @@ selector_error(const selector_status status) {
 }
 
 
-static void
-wake_handler(const int signal) {
+static void wake_handler(const int signal) {
     // nada que hacer. está solo para interrumpir el select
 }
 
@@ -186,8 +186,7 @@ size_t next_capacity(const size_t n) {
     return tmp + 1;
 }
 
-static inline void
-item_init(struct item *item) {
+static inline void item_init(struct item *item) {
     item->fd = FD_UNUSED;
 }
 
@@ -195,8 +194,7 @@ item_init(struct item *item) {
  * inicializa los nuevos items. `last' es el indice anterior.
  * asume que ya está blanqueada la memoria.
  */
-static void
-items_init(fd_selector s, const size_t last) {
+static void items_init(fd_selector s, const size_t last) {
     assert(last <= s->fd_size);
     for(size_t i = last; i < s->fd_size; i++) {
         item_init(s->fds + i);
@@ -206,8 +204,7 @@ items_init(fd_selector s, const size_t last) {
 /**
  * calcula el fd maximo para ser utilizado en select()
  */
-static int
-items_max_fd(fd_selector s) {
+static int items_max_fd(fd_selector s) {
     int max = 0;
     for(int i = 0; i <= s->max_fd; i++) {
         struct item *item = s->fds + i;
@@ -220,8 +217,7 @@ items_max_fd(fd_selector s) {
     return max;
 }
 
-static void
-items_update_fdset_for_fd(fd_selector s, const struct item * item) {
+static void items_update_fdset_for_fd(fd_selector s, const struct item * item) {
     FD_CLR(item->fd, &s->master_r);
     FD_CLR(item->fd, &s->master_w);
 
@@ -285,8 +281,7 @@ ensure_capacity(fd_selector s, const size_t n) {
     return ret;
 }
 
-fd_selector
-selector_new(const size_t initial_elements) {
+fd_selector selector_new(const size_t initial_elements) {
     size_t size = sizeof(struct fdselector);
     fd_selector ret = malloc(size);
     if(ret != NULL) {
@@ -304,8 +299,7 @@ selector_new(const size_t initial_elements) {
     return ret;
 }
 
-void
-selector_destroy(fd_selector s) {
+void selector_destroy(fd_selector s) {
     // lean ya que se llama desde los casos fallidos de _new.
     if(s != NULL) {
         if(s->fds != NULL) {
@@ -331,12 +325,13 @@ selector_destroy(fd_selector s) {
 
 #define INVALID_FD(fd)  ((fd) < 0 || (fd) >= ITEMS_MAX_SIZE)
 
-selector_status
-selector_register(fd_selector        s,
-                     const int          fd,
-                     const fd_handler  *handler,
-                     const fd_interest  interest,
-                     void *data) {
+selector_status selector_register(
+    fd_selector        s,
+    const int          fd,
+    const fd_handler  *handler,
+    const fd_interest  interest,
+    void *data
+) {
     selector_status ret = SELECTOR_SUCCESS;
     // 0. validación de argumentos
     if(s == NULL || INVALID_FD(fd) || handler == NULL) {
@@ -374,8 +369,7 @@ finally:
     return ret;
 }
 
-selector_status
-selector_unregister_fd(fd_selector       s,
+selector_status selector_unregister_fd(fd_selector       s,
                        const int         fd) {
     selector_status ret = SELECTOR_SUCCESS;
 
@@ -410,8 +404,7 @@ finally:
     return ret;
 }
 
-selector_status
-selector_set_interest(fd_selector s, int fd, fd_interest i) {
+selector_status selector_set_interest(fd_selector s, int fd, fd_interest i) {
     selector_status ret = SELECTOR_SUCCESS;
 
     if(NULL == s || INVALID_FD(fd)) {
@@ -429,8 +422,7 @@ finally:
     return ret;
 }
 
-selector_status
-selector_set_interest_key(struct selector_key *key, fd_interest i) {
+selector_status selector_set_interest_key(struct selector_key *key, fd_interest i) {
     selector_status ret;
 
     if(NULL == key || NULL == key->s || INVALID_FD(key->fd)) {
@@ -446,8 +438,7 @@ selector_set_interest_key(struct selector_key *key, fd_interest i) {
  * se encarga de manejar los resultados del select.
  * se encuentra separado para facilitar el testing
  */
-static void
-handle_iteration(fd_selector s) {
+static void handle_iteration(fd_selector s) {
     int n = s->max_fd;
     struct selector_key key = {
         .s = s,
@@ -480,8 +471,7 @@ handle_iteration(fd_selector s) {
     }
 }
 
-static void
-handle_block_notifications(fd_selector s) {
+static void handle_block_notifications(fd_selector s) {
     struct selector_key key = {
         .s = s,
     };
@@ -505,8 +495,7 @@ handle_block_notifications(fd_selector s) {
 }
 
 
-selector_status
-selector_notify_block(fd_selector  s,
+selector_status selector_notify_block(fd_selector  s,
                  const int    fd) {
     selector_status ret = SELECTOR_SUCCESS;
 
@@ -532,8 +521,7 @@ finally:
     return ret;
 }
 
-selector_status
-selector_select(fd_selector s) {
+selector_status selector_select(fd_selector s) {
     selector_status ret = SELECTOR_SUCCESS;
 
     memcpy(&s->slave_r, &s->master_r, sizeof(s->slave_r));
@@ -577,8 +565,7 @@ finally:
     return ret;
 }
 
-int
-selector_fd_set_nio(const int fd) {
+int selector_fd_set_nio(const int fd) {
     int ret = 0;
     int flags = fcntl(fd, F_GETFD, 0);
     if(flags == -1) {

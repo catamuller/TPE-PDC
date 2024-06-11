@@ -278,7 +278,7 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = hello_read_close,
         .on_read_ready    = hello_read,
     },
-…
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Handlers top level de la conexión pasiva.
