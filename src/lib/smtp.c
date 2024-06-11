@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>  // close
 #include <pthread.h>
+#include <sys/socket.h>
 
 #include <arpa/inet.h>
 
@@ -15,6 +16,9 @@
 #include "headers/smtp.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
+
+/** obtiene el struct (smtp *) desde la llave de selección */
+#define ATTACHEMENT(key) ( (struct smtp*)(key)->data)
 
 /** maquina de estados general */
 enum smtp_state {
@@ -163,12 +167,22 @@ static unsigned request_read(struct selector_key * key) {
 
 static unsigned response_write(struct selector_key * key) {
     unsigned ret = RESPONSE_WRITE;
-    
-    int s = send(key->fd, "Hello\n", 6, MSG_NOSIGNAL);
 
-    if(s >= 0) {
-        selector_set_interest_key(key, OP_READ);
-        ret = REQUEST_READ;
+    size_t count;
+    buffer *b = &ATTACHEMENT(key)->write_buffer;
+
+    uint8_t *ptr = buffer_read_ptr(b, &count);
+    ssize_t n = send(key->fd, "Hello\n", 6, MSG_NOSIGNAL);
+
+    if(n >= 0) {
+        buffer_read_adv(b, n);
+        if(!buffer_can_read(b)) {
+            if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+                ret = REQUEST_READ;
+            } else {
+                ret = ERROR;
+            }
+        }
     } else {
         ret = ERROR;
     }
