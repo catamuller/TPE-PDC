@@ -15,6 +15,7 @@ int init_sockets(int fds[2], const char ** errmsg);
 void close_sockets(int fds[2]);
 int init_addresses(struct sockaddr * addresses[2], const char ** errmsg);
 int setsockoptip(int fd);
+int setsockoptipv6(int fd);
 int setsockopts(const int fds[2], const char ** errmsg);
 void mkmaildir(const char * dirname);
 int bindipv4(int fd, struct sockaddr* address);

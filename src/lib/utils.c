@@ -36,12 +36,16 @@ int setsockoptip(int fd) {
   return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int));
 }
 
+int setsockoptipv6(int fd) {
+  return setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int) { 1 }, sizeof(int));
+}
+
 int setsockopts(const int fds[2], const char ** errmsg) {
   if (setsockoptip(fds[0]) < 0) {
     *errmsg = "Unable to set IPv4 socket options.";
     return ERROR;
   }
-  if (setsockoptip(fds[1]) < 0) {
+  if (setsockoptipv6(fds[1]) < 0) {
     *errmsg = "Unable to set IPv6 socket options.";
     return ERROR;
   }
@@ -95,12 +99,11 @@ int bindips(int fds[2], struct sockaddr* addresses[2], const char ** errmsg) {
 }
 
 int listenips(const int fds[2], int max_requests, const char ** errmsg) {
-  int value = 0;
-  if ((value = listen(fds[0], max_requests)) < 0) {
+  if (listen(fds[0], max_requests) < 0) {
     *errmsg = "Unable to listen to IPv4 socket.";
     return ERROR;
   }
-  if ((value = listen(fds[1], max_requests)) < 0) {
+  if (listen(fds[1], max_requests) < 0) {
     *errmsg = "Unable to listen to IPv6 socket.";
     return ERROR;
   }

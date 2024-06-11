@@ -31,7 +31,7 @@ int main(int argc, char ** argv) {
   unsigned int port = 2525;
 
   struct smtpargs args;
-  args.mail_dir = "./mail";
+  args.mail_dir = "mail";
 
   parse_args(argc, argv, &args);
 
@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
   fprintf(stdout, "Listening on SMTP port %d\n", port);
   if (setsockopts(master_sockets, &err_msg) < 0) goto finally;
   if (bindips(master_sockets, addresses, &err_msg) < 0) goto finally;
-  if (listenips(master_sockets, MAX_REQUESTS, &err_msg)) goto finally;
+  if (listenips(master_sockets, MAX_REQUESTS, &err_msg) < 0) goto finally;
 
   signal(SIGTERM, sigterm_handler);
   signal(SIGINT, sigterm_handler);
@@ -93,7 +93,6 @@ int main(int argc, char ** argv) {
     err_msg = "Unable to register FD for IPv6.";
     goto finally;
   }
-
   while(!done) {
     err_msg = NULL;
     ss = selector_select(selector);
