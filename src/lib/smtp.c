@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>  // close
 #include <pthread.h>
+#include <sys/socket.h>
 
 #include <arpa/inet.h>
 
@@ -194,20 +195,20 @@ static unsigned request_read(struct selector_key * key) {
 static unsigned response_write(struct selector_key * key) {
     unsigned ret = RESPONSE_WRITE;
 
-    size_t count; 
-    buffer *b =&ATTACHMENT(key)->write_buffer;
-    
-    uint8_t *ptr = buffer_read_ptr(b,&count);
-    int s = send(key->fd, "Hello\n", 6, MSG_NOSIGNAL);
-    
-    if(s >= 0) {
-        buffer_read_adv(b,s);
-        if(!buffer_can_read(b)){
-            if(selector_set_interest_key(key,OP_READ)==SELECTOR_SUCCESS){
-                ret=REQUEST_READ;
-            } else{
-                ret=ERROR;
-            }       
+    size_t count;
+    buffer *b = &ATTACHMENT(key)->write_buffer;
+
+    uint8_t *ptr = buffer_read_ptr(b, &count);
+    ssize_t n = send(key->fd, "Hello\n", 6, MSG_NOSIGNAL);
+
+    if(n >= 0) {
+        buffer_read_adv(b, n);
+        if(!buffer_can_read(b)) {
+            if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+                ret = REQUEST_READ;
+            } else {
+                ret = ERROR;
+            }
         }
     } else {
         ret = ERROR;
