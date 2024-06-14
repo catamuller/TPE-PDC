@@ -17,6 +17,13 @@ enum string_cmp_event_types {
     STRING_CMP_NEQ,
 };
 
+static void may_eq(struct parser_event *ret, const uint8_t c);
+
+
+static void eq(struct parser_event *ret, const uint8_t c);
+
+static void neq(struct parser_event *ret, const uint8_t c);
+
 const char *
 parser_utils_strcmpi_event(const enum string_cmp_event_types type);
 

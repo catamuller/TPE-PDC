@@ -14,10 +14,12 @@
 #include "headers/buffer.h"
 #include "headers/stm.h"
 #include "headers/smtp.h"
-#include "headers/request.h"
+#include "headers/requests.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 #define ATTACHMENT(key) ( (struct smtp *)(key)->data)
+
+#define BUFFER_MAX_SIZE 1024
 
 /** maquina de estados general */
 enum smtp_state {
@@ -36,14 +38,14 @@ enum smtp_state {
     CLIENT_HELLO,
 
     /**
-     * envía la respuesta del `HELLO' al cliente.
+     * envía la respuesta del `HELLO` al cliente.
      *
      * Intereses:
      *     - OP_WRITE sobre client_fd
      *
      * Transiciones:
      *   - SERVER_HELLO          mientras queden bytes por enviar
-     *   - CLIENT_MAIL_FROM      cuando se enviaron todos los bytes
+     *   - CLIENT_MAIL_FROM      cuando se enviaron todos los bytes -> acá falta autenticación antes de esta transición
      *   - ERROR                 ante cualquier error (IO/parseo)
      */
    SERVER_HELLO,
@@ -153,7 +155,6 @@ enum smtp_state {
    SERVER_MAIL_END,
 
     // estados terminales
-    DONE,
     ERROR,
     QUIT
 };
@@ -173,8 +174,8 @@ struct smtp {
     uint8_t raw_buff_read[2048], raw_buff_write[2048];
     buffer read_buffer, write_buffer;
 
-    struct request request;
-    struct request_parser request_parser;
+    struct smtp_request request;
+    struct smtp_request_parser request_parser;
 
 };
 
@@ -189,6 +190,17 @@ static const struct fd_handler smtp_handler = {
     .handle_close  = smtp_close,
     .handle_block  = smtp_block,
 };
+
+static void client_hello_read_init(struct selector_key * key) {
+    struct smtp_request_parser *st = &ATTACHMENT(key)->request_parser;
+    st->request = &ATTACHMENT(key)->request;
+    st->state = request_helo;
+    memset(st->request, 0, sizeof(*(st->request)));
+}
+
+static void client_hello_read_close(const unsigned state, struct selector_key *key) { 
+    smtp_request_close(&ATTACHMENT(key)->request_parser);
+}
 
 static void request_read_init(const unsigned state,struct selector_key *key){
     struct request_parser *st = &ATTACHMENT(key)->request_parser;
@@ -206,13 +218,13 @@ static void smtp_destroy(struct smtp * smtp) {
 }
 
 static unsigned request_read(struct selector_key * key);
-static unsigned response_write(struct selector_key * key);
+static unsigned client_hello(struct selector_key * key);
 static const struct state_definition client_statbl[] = {
     {
-        .state            = CLIENT_HELLO,/*
-        .on_arrival       = hello_read_init,
-        .on_departure     = hello_read_close,*/
-        .on_write_ready    = response_write,
+        .state            = CLIENT_HELLO,
+        .on_arrival       = client_hello_read_init,
+        .on_departure     = client_hello_read_close,
+        .on_write_ready   = client_hello,
     },
     {   .state            = SERVER_HELLO,
         .on_arrival       = request_read_init,
@@ -274,9 +286,9 @@ fail:
 
 static unsigned request_read(struct selector_key * key) {
     unsigned ret = SERVER_HELLO;
-    char buffer[1024] = {0};
+    char buffer[BUFFER_MAX_SIZE] = {0};
 
-    struct smtp * state=ATTACHMENT(key);
+    struct smtp * state = ATTACHMENT(key);
     int r = recv(key->fd, buffer, 1023, 0);
     if(r > 0) {
         buffer[r] = 0;
@@ -296,7 +308,7 @@ static unsigned request_read(struct selector_key * key) {
     return ret;
 }
 
-static unsigned response_write(struct selector_key * key) {
+static unsigned client_hello(struct selector_key * key) {
     unsigned ret = CLIENT_HELLO;
 
     size_t count;
