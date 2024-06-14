@@ -22,44 +22,147 @@
 /** maquina de estados general */
 enum smtp_state {
     /**
-     * recibe el mensaje `hello` del cliente, y lo procesa
+     * recibe el mensaje `HELLO` del cliente, y lo procesa
      *
      * Intereses:
      *     - OP_READ sobre client_fd
      *
      * Transiciones:
-     *   - HELLO_READ  mientras el mensaje no esté completo
-     *   - HELLO_WRITE cuando está completo
-     *   - ERROR       ante cualquier error (IO/parseo)
+     *   - CLIENT_HELLO  mientras el mensaje no esté completo
+     *   - SERVER_HELLO  cuando está completo
+     *   - ERROR         ante cualquier error (IO/parseo)
+     *   - QUIT
      */
-    RESPONSE_WRITE,
+    CLIENT_HELLO,
 
     /**
-     * envía la respuesta del `hello' al cliente.
+     * envía la respuesta del `HELLO' al cliente.
      *
      * Intereses:
      *     - OP_WRITE sobre client_fd
      *
      * Transiciones:
-     *   - RESPONSE_WRITE  mientras queden bytes por enviar
-     *   - REQUEST_READ cuando se enviaron todos los bytes
-     *   - ERROR        ante cualquier error (IO/parseo)
+     *   - SERVER_HELLO          mientras queden bytes por enviar
+     *   - CLIENT_MAIL_FROM      cuando se enviaron todos los bytes
+     *   - ERROR                 ante cualquier error (IO/parseo)
      */
-   REQUEST_READ,
+   SERVER_HELLO,
 
-   DATA_WRITE,
+    /**
+     * recibe el mensaje `MAIL FROM` del cliente, y lo procesa
+     * 
+     * Intereses:
+     *      - OP_READ sobre client_fd
+     * 
+     * Transiciones:
+     *    - CLIENT_MAIL_FROM mientras el mensaje no esté completo
+     *    - SERVER_MAIL_FROM cuando esté completo
+     *    - ERROR            ante cualquier error (IO/parseo)
+     *    - QUIT
+     */
+   CLIENT_MAIL_FROM,
 
-   DATA_READ,
+    /**
+     * envía la respuesta del `MAIL FROM` al cliente.
+     * 
+     * Intereses:
+     *      - OP_WRITE sobre client_fd
+     * 
+     * Transiciones:
+     *   - SERVER_MAIL_FROM mientras queden bytes por enviar
+     *   - CLIENT_RCPT_TO   cuando se enviaron todos los bytes
+     *   - ERROR            ante cualquier error (IO/parseo)
+     */
+   SERVER_MAIL_FROM,
+
+    /**
+     * recibe el mensaje de `RCPT TO` del cliente, y lo procesa
+     * 
+     * Intereses:
+     *      - OP_READ sobre client_fd
+     * 
+     * Transiciones:
+     *   - CLIENT_RCPT_TO mientras el mensaje no esté completo
+     *   - SERVER_RCPT_TO cuando esté completo
+     *   - ERROR          ante cualquier error (IO/parseo)
+     *   - QUIT
+     */
+   CLIENT_RCPT_TO,
+
+    /**
+     * envía la respuesta del `RCPT TO` al cliente.
+     * 
+     * Intereses:
+     *      - OP_WRITE sobre client_fd
+     * 
+     * Transiciones:
+     *   - SERVER_RCPT_TO mientras queden bytes por enviar
+     *   - CLIENT_DATA    cuando se enviaron todos los bytes
+     *   - ERROR          ante cualquier error (IO/parseo)
+     */
+   SERVER_RCPT_TO,
+
+    /**
+     * recibe el mensaje de `DATA` del cliente
+     * 
+     * Intereses:
+     *      - OP_READ sobre client_fd
+     * 
+     * Transiciones:
+     *   - SERVER_DATA siempre
+     *   - ERROR       ante cualquier error (IO/parseo)
+     */
+   CLIENT_DATA,
+
+    /**
+     * envía la respuesta del `DATA` al cliente
+     * 
+     * Intereses:
+     *      - OP_WRITE sobre client_fd
+     * 
+     * Transiciones:
+     *   - SERVER_DATA         mientras queden bytes por enviar
+     *   - CLIENT_MAIL_CONTENT cuando se enviaron todos los bytes
+     *   - ERROR               ante cualquier error (IO/parseo)
+     */
+   SERVER_DATA,
+   
+    /**
+     * recibe el contenido del mail por parte del cliente (menos <CR><LF>.<CR><LF>)
+     * 
+     * Intereses:
+     *      - OP_READ sobre client_fd
+     * 
+     * Transiciones:
+     *   - CLIENT_MAIL_CONTENT si el contenido no contiene un `<CR><LF>.<CR><LF>`
+     *   - SERVER_MAIL_END     si el contenido final es un `<CR><LF>.<CR><LF>`
+     *   - ERROR               ante cualquier error (IO/parseo)
+     */
+   CLIENT_MAIL_CONTENT,
+
+    /**
+     * envía la respuesta de `queued` del contenido del MAIL.
+     * 
+     * Intereses:
+     *      - OP_WRITE sobre client_fd
+     * 
+     * Transiciones:
+     *   - CLIENT_MAIL_FROM siempre
+     *   - ERROR            ante cualquier error (IO/parseo)
+     */
+   SERVER_MAIL_END,
 
     // estados terminales
     DONE,
     ERROR,
+    QUIT
 };
 
 
 struct smtp {
 
     /** informacion del cliente */
+    size_t client_fd;
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
 
@@ -91,7 +194,6 @@ static void request_read_init(const unsigned state,struct selector_key *key){
     struct request_parser *st = &ATTACHMENT(key)->request_parser;
     st->request=&ATTACHMENT(key)->request;
     request_parser_init(st);
-
 }
 
 static void request_read_close(const unsigned state, struct selector_key *key) { 
@@ -107,12 +209,12 @@ static unsigned request_read(struct selector_key * key);
 static unsigned response_write(struct selector_key * key);
 static const struct state_definition client_statbl[] = {
     {
-        .state            = RESPONSE_WRITE,/*
+        .state            = CLIENT_HELLO,/*
         .on_arrival       = hello_read_init,
         .on_departure     = hello_read_close,*/
         .on_write_ready    = response_write,
     },
-    {   .state            = REQUEST_READ,
+    {   .state            = SERVER_HELLO,
         .on_arrival       = request_read_init,
         .on_departure     = request_read_close,
         .on_read_ready    = request_read,
@@ -120,7 +222,8 @@ static const struct state_definition client_statbl[] = {
     {
         .state=DONE,
     },
-    {.state= ERROR,
+    {
+        .state= ERROR,
     }
 };
 
@@ -147,6 +250,7 @@ void smtp_passive_accept(struct selector_key * key) {
     memset(state, 0, sizeof(*state)); //para que este en blanco
     memcpy(&state->client_addr, &client_addr, client_addr_len);
     state->client_addr_len = client_addr_len;
+    state->client_fd = client;
 
     buffer_init(&state->read_buffer, N(state->raw_buff_read), state->raw_buff_read);
     buffer_init(&state->write_buffer, N(state->raw_buff_write), state->raw_buff_write);
@@ -169,7 +273,7 @@ fail:
 }
 
 static unsigned request_read(struct selector_key * key) {
-    unsigned ret = REQUEST_READ;
+    unsigned ret = SERVER_HELLO;
     char buffer[1024] = {0};
 
     struct smtp * state=ATTACHMENT(key);
@@ -184,7 +288,7 @@ static unsigned request_read(struct selector_key * key) {
 
         selector_set_interest_key(key, OP_WRITE);
 
-        ret = RESPONSE_WRITE;
+        ret = CLIENT_HELLO;
     } else {
         ret = ERROR;
     }
@@ -193,7 +297,7 @@ static unsigned request_read(struct selector_key * key) {
 }
 
 static unsigned response_write(struct selector_key * key) {
-    unsigned ret = RESPONSE_WRITE;
+    unsigned ret = CLIENT_HELLO;
 
     size_t count;
     buffer *b = &ATTACHMENT(key)->write_buffer;
@@ -205,7 +309,7 @@ static unsigned response_write(struct selector_key * key) {
         buffer_read_adv(b, n);
         if(!buffer_can_read(b)) {
             if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
-                ret = REQUEST_READ;
+                ret = SERVER_HELLO;
             } else {
                 ret = ERROR;
             }
@@ -220,36 +324,33 @@ static unsigned response_write(struct selector_key * key) {
 static void smtp_done(struct selector_key* key);
 
 static void smtp_read(struct selector_key *key){
-    // struct smtp *smtp = ATTACHMENT(key);
-    // buffer *b = &smtp->read_buffer;
-    // size_t count = 0;
-    request_read(key);
-    
-    // uint8_t *ptr = buffer_write_ptr(b, &count);
-    // ssize_t n = recv(key->fd, ptr, count, 0);
-    // printf("%s\n",ptr);
-    // if (n > 0) {
-    //   buffer_write_adv(b, n);
-    // } else if (n == 0) {
-    //   smtp_done(key);
-    // } else {
-    //   smtp_done(key);
-    // }
+    struct state_machine *stm = &ATTACHMENT(key)->stm;
+    const enum smtp_state st = stm_handler_read(stm, key);
+    if (ERROR == st || DONE == st) {
+        smtp_done(key);
+    }
 }
 static void smtp_write(struct selector_key *key){
-  
+  struct state_machine *stm = &ATTACHMENT(key)->stm;
+    const enum smtp_state st = stm_handler_write(stm, key);
+    if (ERROR == st || DONE == st) {
+        smtp_done(key);
+    }
 }
 static void smtp_block(struct selector_key *key){
-  
+  struct state_machine *stm = &ATTACHMENT(key)->stm;
+    const enum smtp_state st = stm_handler_block(stm, key);
+
+    if (ERROR == st || DONE == st) {
+        smtp_done(key);
+    }
 }
 static void smtp_close(struct selector_key *key){
   
 }
 static void smtp_done(struct selector_key* key) {
   const int fds[] = {
-    0
-        //ATTACHMENT(key)->client_fd,
-        //ATTACHMENT(key)->origin_fd,
+        ATTACHMENT(key)->client_fd,
     };
     for(unsigned i = 0; i < N(fds); i++) {
         if(fds[i] != -1) {
