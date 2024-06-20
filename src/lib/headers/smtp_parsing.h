@@ -46,44 +46,43 @@ enum state_names {
   MAIL_I = 11,
   MAIL_L = 12,
 
-  RCPT_R = 13,
-  RCPT_C = 14,
-  RCPT_P = 15,
-  RCPT_T = 16,
+  RCPT_C = 13,
+  RCPT_P = 14,
+  RCPT_T = 15,
 
-  DATA_D = 17,
-  DATA_A = 18,
-  DATA_T = 19,
-  DATA_FINAL_A = 20,
+  DATA_D = 16,
+  DATA_A = 17,
+  DATA_T = 18,
+  DATA_FINAL_A = 19,
 
-  RSET_R = 21,
-  RSET_S = 22,
-  RSET_E = 23,
-  RSET_T = 24,
+  RSET_S = 20,
+  RSET_E = 21,
+  RSET_T = 22,
 
-  NOOP_N = 25,
-  NOOP_O = 26,
-  NOOP_SECOND_O = 27,
-  NOOP_P = 28,
+  NOOP_N = 23,
+  NOOP_O = 24,
+  NOOP_SECOND_O = 25,
+  NOOP_P = 26,
 
-  QUIT_Q = 29,
-  QUIT_U = 30,
-  QUIT_I = 31,
-  QUIT_T = 32,
+  QUIT_Q = 27,
+  QUIT_U = 28,
+  QUIT_I = 29,
+  QUIT_T = 30,
 
-  VRFY_V = 33,
-  VRFY_R = 34,
-  VRFY_F = 35,
-  VRFY_Y = 36,
+  VRFY_V = 31,
+  VRFY_R = 32,
+  VRFY_F = 33,
+  VRFY_Y = 34,
 
-  R = 37,
+  R = 35,
 
-  NEQ = 38,
-  EQ = 39,
+  HELO_SPACE = 36,
+  EHLO_SPACE = 37,
+  MAIL_SPACE = 38,
+  RCPT_SPACE = 39,
 
-  SPACE = 40,
-  MAIL_SPACE = 41,
-  RCPT_SPACE = 42
+  NEQ = 90,
+  EQ = 91,
 };
 
 struct parser * smtp_parser_init();
