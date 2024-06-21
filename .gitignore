@@ -6,3 +6,4 @@ cmake-build-debug
 .idea
 smtpd
 logs
+mail_dir/

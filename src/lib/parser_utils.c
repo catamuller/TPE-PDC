@@ -71,8 +71,24 @@ void eqPARSERRST(struct parser_event *ret, const uint8_t c) {
     type(PARSER_RESET_CMP_EQ, ret, c);
 }
 
+void eqCLIENTDATA(struct parser_event *ret, const uint8_t c) {
+    type(CLIENT_DATA_CMP_EQ, ret, c);
+}
+
 void neqDomain(struct parser_event *ret, const uint8_t c) {
     type(NEQ_DOMAIN, ret, c);
+}
+
+void RCPTTOSave(struct parser_event *ret, const uint8_t c) {
+    type(RCPTTOSAVE_CMP_EQ, ret, c);
+}
+
+void MAILFROMSave(struct parser_event *ret, const uint8_t c) {
+    type(MAILFROMSAVE_CMP_EQ, ret, c);
+}
+
+void CLIENTDATASave(struct parser_event *ret, const uint8_t c) {
+    type(DATASAVE_CMP_EQ, ret, c);
 }
 
 void neq(struct parser_event *ret, const uint8_t c) {

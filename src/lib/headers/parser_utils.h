@@ -21,9 +21,13 @@ enum string_cmp_event_types {
     MAIL_FROM_CMP_EQ,
     RCPT_TO_CMP_EQ,
     DATA_CMP_EQ,
+    CLIENT_DATA_CMP_EQ,
     QUIT_CMP_EQ,
     NEQ_DOMAIN,
-    PARSER_RESET_CMP_EQ
+    PARSER_RESET_CMP_EQ,
+    RCPTTOSAVE_CMP_EQ,
+    MAILFROMSAVE_CMP_EQ,
+    DATASAVE_CMP_EQ
 };
 
 void may_eq(struct parser_event *ret, const uint8_t c);
@@ -46,6 +50,14 @@ void eqQUIT(struct parser_event *ret, const uint8_t c);
 void eqDATA(struct parser_event *ret, const uint8_t c);
 
 void eqPARSERRST(struct parser_event *ret, const uint8_t c);
+
+void eqCLIENTDATA(struct parser_event *ret, const uint8_t c);
+
+void RCPTTOSave(struct parser_event *ret, const uint8_t c);
+
+void MAILFROMSave(struct parser_event *ret, const uint8_t c);
+
+void CLIENTDATASave(struct parser_event *ret, const uint8_t c);
 
 void neq(struct parser_event *ret, const uint8_t c);
 
