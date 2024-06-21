@@ -79,6 +79,10 @@ void neqDomain(struct parser_event *ret, const uint8_t c) {
     type(NEQ_DOMAIN, ret, c);
 }
 
+void USERSave(struct parser_event *ret, const uint8_t c) {
+    type(USERSAVE_CMP_EQ, ret, c);
+}
+
 void RCPTTOSave(struct parser_event *ret, const uint8_t c) {
     type(RCPTTOSAVE_CMP_EQ, ret, c);
 }

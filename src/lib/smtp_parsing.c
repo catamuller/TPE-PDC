@@ -48,6 +48,9 @@ char randomId[BUFFER_MAX_SIZE];
 size_t dataIndex = 0;
 char data[4*BUFFER_MAX_SIZE];
 
+char user[BUFFER_MAX_SIZE];
+size_t userIndex = 0;
+
 void setCRDest(int index) {
   STATE_DOMAIN_CR[0].dest = index;
 }
@@ -345,8 +348,7 @@ static const struct parser_state_transition ST_35[] = {
 
 static const struct parser_state_transition ST_36[] = {
   /* TODO: define what to do when client writes HELO\s*/
-
-  {.when = ANY,     .dest = HELO_DOMAIN_STATE,         .act1 = may_eq}
+  {.when = ANY,     .dest = HELO_DOMAIN_STATE,         .act1 = USERSave}
 };
 
 static const struct parser_state_transition ST_37[] = {
@@ -374,7 +376,7 @@ static const struct parser_state_transition ST_39[] = {
 static const struct parser_state_transition ST_40[] = {
   {.when = '\r',    .dest = HELO_CR_STATE,     .act1 = may_eq},
 
-  {.when = ANY,     .dest = HELO_DOMAIN_STATE, .act1 = may_eq}
+  {.when = ANY,     .dest = HELO_DOMAIN_STATE, .act1 = USERSave}
 };
 
 static const struct parser_state_transition ST_41[] = {
@@ -803,6 +805,9 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
         break;
       case NEQ_DOMAIN:
         mailFromIndex = 0;
+        break;
+      case USERSAVE_CMP_EQ:
+        user[userIndex++] = e1->data[0];
         break;
     }
 

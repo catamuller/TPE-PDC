@@ -25,6 +25,7 @@ enum string_cmp_event_types {
     QUIT_CMP_EQ,
     NEQ_DOMAIN,
     PARSER_RESET_CMP_EQ,
+    USERSAVE_CMP_EQ,
     RCPTTOSAVE_CMP_EQ,
     MAILFROMSAVE_CMP_EQ,
     DATASAVE_CMP_EQ
@@ -52,6 +53,8 @@ void eqDATA(struct parser_event *ret, const uint8_t c);
 void eqPARSERRST(struct parser_event *ret, const uint8_t c);
 
 void eqCLIENTDATA(struct parser_event *ret, const uint8_t c);
+
+void USERSave(struct parser_event *ret, const uint8_t c);
 
 void RCPTTOSave(struct parser_event *ret, const uint8_t c);
 
