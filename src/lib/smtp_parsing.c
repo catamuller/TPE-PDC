@@ -354,7 +354,7 @@ static const struct parser_state_transition ST_36[] = {
 static const struct parser_state_transition ST_37[] = {
   /* TODO: define what to do when client writes EHLO\s*/
 
-  {.when = ANY,     .dest = EHLO_DOMAIN_STATE,         .act1 = neq}
+  {.when = ANY,     .dest = EHLO_DOMAIN_STATE,         .act1 = USERSave}
 };
 
 static const struct parser_state_transition ST_38[] = {
@@ -393,7 +393,7 @@ static const struct parser_state_transition ST_42[] = {
 static const struct parser_state_transition ST_43[] = {
   {.when = '\r',    .dest = EHLO_CR_STATE,     .act1 = may_eq},
 
-  {.when = ANY,     .dest = EHLO_DOMAIN_STATE, .act1 = may_eq}
+  {.when = ANY,     .dest = EHLO_DOMAIN_STATE, .act1 = USERSave}
 };
 
 static const struct parser_state_transition ST_44[] = {
