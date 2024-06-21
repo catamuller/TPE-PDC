@@ -53,7 +53,7 @@ void jump(struct state_machine *stm, unsigned next, struct selector_key *key) {
             stm->current->on_arrival(stm->current->state, key);
         }
     }
-    log_data("%s at state %s", getCurrentUser(), get_state_name(next));
+    log_data("%s entered %s", getCurrentUser(), get_state_name(next));
 }
 
 unsigned

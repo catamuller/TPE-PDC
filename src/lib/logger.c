@@ -30,6 +30,7 @@ void dump_logger_buffer(void) {
         logBuffer[bufferWritten] = '\0';
         fprintf(log_out, "%s", logBuffer);
         bufferWritten = 0;
+        fflush(log_out);
     }
 }
 
@@ -44,7 +45,7 @@ void close_logger(void) {
         pthread_mutex_lock(&logger_mutex);
         dump_logger_buffer();
         fclose(log_out);
-        // Mutex is not unblocked as the logger is destroyed
+        // no se desbloquea el mutex para que no escriba en algo no valido
     }
 }
 
@@ -88,14 +89,14 @@ int log_data(char *str, ...) {
 
     bufferWritten += sprintf(logBuffer + bufferWritten, "%s", buffer);
 
-    int remainingBuffer = BUFFER_USED_LIMIT - bufferWritten - 1;
+    int remainingBuffer = BUFFER_SIZE - bufferWritten - 1;
     int written = vsnprintf(logBuffer + bufferWritten, remainingBuffer, str, args);
     bufferWritten += written;
+    logBuffer[bufferWritten++] = '\n';
 
-    if (bufferWritten >= BUFFER_SIZE) {
+    if (bufferWritten >= BUFFER_USED_LIMIT) {
         dump_logger_buffer();
     }
-    logBuffer[bufferWritten++] = '\n';
 
     va_end(args);
 
