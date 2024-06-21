@@ -13,12 +13,17 @@ char logBuffer[BUFFER_SIZE];
 int bufferWritten = 0;
 
 pthread_mutex_t logger_mutex;
+time_t timer;
+struct tm* tm_info;
 
 //TODO si escribis un string de mas de 512 caracteres tiene la chance de perder parte del log
 
 int init_logger(char *logLocation) {
     log_out = fopen(logLocation, "a");
     canWrite = (log_out == NULL) ? ERROR : SUCCESS;
+    if (canWrite == SUCCESS) {
+        timer = time(NULL);
+    }
     return canWrite;
 }
 
@@ -79,9 +84,20 @@ int log_data(char *str, ...) {
     if (bufferWritten >= BUFFER_USED_LIMIT)
         dump_logger_buffer();
 
+    char buffer[32];
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S : ", tm_info);
+
+    bufferWritten += sprintf(logBuffer + bufferWritten, "%s", buffer);
+
     int remainingBuffer = BUFFER_USED_LIMIT - bufferWritten;
     int written = vsnprintf(logBuffer + bufferWritten, remainingBuffer, str, args);
     bufferWritten += written;
+
+    if (bufferWritten >= BUFFER_SIZE) {
+        dump_logger_buffer();
+    }
+    logBuffer[bufferWritten++] = '\n';
 
     va_end(args);
 

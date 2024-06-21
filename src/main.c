@@ -100,6 +100,9 @@ int main(int argc, char ** argv) {
     err_msg = "Unable to register FD for IPv6.";
     goto finally;
   }
+
+  log_data("SMTP Server Initialized");
+
   while(!done) {
     err_msg = NULL;
     ss = selector_select(selector);
@@ -122,6 +125,7 @@ int main(int argc, char ** argv) {
     selector_destroy(selector);
   selector_close();
   close_sockets(master_sockets);
+  log_data("SMTP Server Shutting Down");
   close_logger();
   return 0;
 }
