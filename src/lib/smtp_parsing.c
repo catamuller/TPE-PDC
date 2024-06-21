@@ -166,7 +166,6 @@ static const struct parser_state_transition ST_14[] = {
 
 static const struct parser_state_transition ST_15[] = {
   {.when = ' ',     .dest = RCPT_SPACE,      .act1 = may_eq},
-  {.when = ' ',     .dest = RCPT_SPACE,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -374,7 +373,8 @@ static const struct parser_state_transition ST_45[] = {
 
 static const struct parser_state_transition ST_46[] = {
   /* TODO: on error (unrecognized command - NEQ)*/
-  {.when = ANY,     .dest = 0,         .act1 = neq}
+  {.when = '\r',    .dest = PARSER_RESET_CR_STATE,    .act1 = may_eq},
+  {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
 
 static const struct parser_state_transition ST_47[] = {
@@ -412,6 +412,7 @@ static const struct parser_state_transition ST_51[] = {
 
 static const struct parser_state_transition ST_52[] = {
   {.when = '@',     .dest = MAX_STATES-100,      .act1 = may_eq},
+  {.when = '\r',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = ANY,     .dest = FROM_SPACE,          .act1 = may_eq} // TODO: save character in string with act2
 };
 
@@ -440,12 +441,12 @@ static const struct parser_state_transition ST_56[] = {
 
 static const struct parser_state_transition ST_57[] = {
   {.when = '\r',    .dest = RCPT_TO_CR_STATE, .act1 = may_eq},
-  {.when = ANY,     .dest = TO_SPACE,   .act1 = neq} // TODO: save character in string with act2
+  {.when = ANY,     .dest = TO_SPACE,   .act1 = may_eq}
 };
 
 static const struct parser_state_transition ST_58[] = {
   {.when = '\n',    .dest = RCPT_TO_LF_STATE, .act1 = eqRCPT},
-  {.when = ANY,     .dest = TO_SPACE,   .act1 = neq} // TODO: save character in string with act2
+  {.when = ANY,     .dest = TO_SPACE,   .act1 = eqRCPT} 
 };
 
 static const struct parser_state_transition ST_59[] = {
@@ -461,7 +462,7 @@ static const struct parser_state_transition ST_60[] = {
 
 static const struct parser_state_transition ST_61[] = {
   
-  {.when = ANY,     .dest = NEQ,         .act1 = eqQUIT}
+  {.when = ANY,     .dest = QUIT_LF_STATE,     .act1 = eqQUIT}
 };
 
 static const struct parser_state_transition ST_62[] = {
@@ -472,8 +473,21 @@ static const struct parser_state_transition ST_62[] = {
 
 static const struct parser_state_transition ST_63[] = {
   
-  {.when = ANY,     .dest = NEQ,         .act1 = eqDATA} // TODO: save data with act2
+  {.when = ANY,     .dest = DATA_LF_STATE,         .act1 = eqDATA} // TODO: save data with act2
 };
+
+static const struct parser_state_transition ST_64[] = {
+  /* TODO: on error (unrecognized command - NEQ)*/
+  {.when = '\n',    .dest = PARSER_RESET_LF_STATE,    .act1 = eqPARSERRST},
+  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+};
+
+
+static const struct parser_state_transition ST_65[] = {
+  
+  {.when = ANY,     .dest = PARSER_RESET_LF_STATE,         .act1 = eqPARSERRST} // TODO: save data with act2
+};
+
 
 
 size_t states_amount[MAX_STATES] = {
@@ -540,7 +554,9 @@ size_t states_amount[MAX_STATES] = {
     N(ST_60),
     N(ST_61),
     N(ST_62),
-    N(ST_63)
+    N(ST_63),
+    N(ST_64),
+    N(ST_65)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -607,7 +623,9 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_60,
     ST_61,
     ST_62,
-    ST_63
+    ST_63,
+    ST_64,
+    ST_65
   };
 
 

@@ -23,6 +23,8 @@
 
 #define BUFFER_MAX_SIZE 1024
 
+#define GOTO_PREVIOUS MAX_STATES
+
 /** maquina de estados general */
 enum smtp_state {
     /**
@@ -336,6 +338,14 @@ static void server_quit_write_close(const unsigned state, struct selector_key *k
     // TODO
 }
 
+static void server_close_write_init(const unsigned state, struct selector_key *key) {
+    // TODO
+}
+
+static void server_close_write_close(const unsigned state, struct selector_key *key) {
+    // TODO
+}
+
 // static void request_read_init(const unsigned state,struct selector_key *key){
 //     struct request_parser *st = &ATTACHMENT(key)->request_parser;
 //     st->request=&ATTACHMENT(key)->request;
@@ -367,6 +377,7 @@ static unsigned server_mail_end(struct selector_key *key);
 static unsigned server_wrong_arguments(struct selector_key *key);
 static unsigned server_error(struct selector_key *key);
 static unsigned server_quit(struct selector_key *key);
+static unsigned server_close(struct selector_key *key);
 
 static const struct state_definition client_statbl[] = {
     {
@@ -381,12 +392,14 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = server_no_greeting_write_close,
         .on_write_ready   = server_no_greeting
     },
-    {   .state            = SERVER_HELLO,
+    {
+        .state            = SERVER_HELLO,
         .on_arrival       = server_hello_write_init,
         .on_departure     = server_hello_write_close,
         .on_write_ready   = server_hello,
     },
-    {   .state            = SERVER_EHLO,
+    {
+        .state            = SERVER_EHLO,
         .on_arrival       = server_ehlo_write_init,
         .on_departure     = server_ehlo_write_close,
         .on_write_ready   = server_ehlo,
@@ -421,7 +434,7 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = server_mail_from_close,
         .on_write_ready   = server_mail_from,
     },
-    {   
+    {
         .state            = SERVER_WRONG_DOMAIN,
         .on_arrival       = server_wrong_domain_init,
         .on_departure     = server_wrong_domain_close,
@@ -439,7 +452,7 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = client_read_close,
         .on_read_ready    = client_read,
     },
-    {   
+    {
         .state            = SERVER_RCPT_TO,
         .on_arrival       = server_rcpt_to_init,
         .on_departure     = server_rcpt_to_close,
@@ -486,8 +499,15 @@ static const struct state_definition client_statbl[] = {
         .on_arrival       = server_quit_write_init,
         .on_departure     = server_quit_write_close,
         .on_write_ready   = server_quit
+    },
+    {
+        .state            = CLOSE,
+        .on_arrival       = server_close_write_init,
+        .on_departure     = server_close_write_close,
+        .on_write_ready   = server_close
     }
 };
+
 
 /** Intenta aceptar la nueva conexión entrante*/
 void smtp_passive_accept(struct selector_key * key) {
@@ -563,10 +583,10 @@ fail:
 
 static unsigned client_read(struct selector_key * key) {
 
-    unsigned ret = CLIENT_HELLO;
     //char buffer[BUFFER_MAX_SIZE] = {0};
 
     struct smtp * state = ATTACHMENT(key);
+    unsigned ret = ATTACHMENT(key)->stm.current->state;
     int r = recv(key->fd, state->read_buffer.read, 1023, 0);
     if(r > 0) {
         state->read_buffer.data[r] = 0;
@@ -576,6 +596,8 @@ static unsigned client_read(struct selector_key * key) {
         switch(event->type) {
             case HELO_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
@@ -588,6 +610,8 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case EHLO_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
@@ -600,6 +624,8 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case MAIL_FROM_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 if (state->stm.current->state < CLIENT_MAIL_FROM) {
                     ret = SERVER_NO_GREETING;
                     break;
@@ -612,6 +638,8 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case RCPT_TO_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 if (state->stm.current->state < CLIENT_RCPT_TO) {
                     ret = SERVER_NO_MAIL;
                     break;
@@ -620,6 +648,8 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case DATA_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 if (state->stm.current->state < CLIENT_DATA) {
                     ret = SERVER_NO_RCPT;
                     break;
@@ -632,6 +662,8 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case NEQ_DOMAIN:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 if (state->stm.current->state < CLIENT_MAIL_FROM) {
                     ret = SERVER_NO_GREETING;
                     break;
@@ -644,17 +676,25 @@ static unsigned client_read(struct selector_key * key) {
                 break;
             case STRING_CMP_NEQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 ret = SERVER_WRONG_ARGUMENTS;
                 break;
             case QUIT_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 ret = CLOSE;
+                break;
+            case PARSER_RESET_CMP_EQ:
+                selector_set_interest_key(key, OP_READ);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
                 break;
             default:
                 selector_set_interest_key(key, OP_READ);
         }
-        buffer_reset(&state->read_buffer);
-        parser_reset(state->smtp_parser);
+        
         //buffer_write_adv(&state->read_buffer,r);
         //bool error=false;
         //int st=(&state->read_buffer,&state->smtp_parser,&error);
@@ -681,7 +721,10 @@ static unsigned server_template(struct selector_key * key, int returnValue, cons
         //buffer_read_adv(b, n);
         if(!buffer_can_read(b)) {
             if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
-                ret = success;
+                if (success < GOTO_PREVIOUS)
+                    ret = success;
+                else
+                    ret = ATTACHMENT(key)->stm.previous->state;
             } else {
                 ret = ERROR;
             }
@@ -718,11 +761,11 @@ static unsigned server_ehlo(struct selector_key * key) {
 }
 
 static unsigned server_already_greeted(struct selector_key * key) {
-    return server_template(key, SERVER_ALREADY_GREETED, "%d - Already greeted!\n", status_bad_seq_cmds, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_ALREADY_GREETED, "%d - Already greeted!\n", status_bad_seq_cmds, GOTO_PREVIOUS);
 }
 
 static unsigned server_no_mail(struct selector_key *key) {
-    return server_template(key, SERVER_NO_MAIL, "%d - Need MAIL command first!\n", status_bad_seq_cmds, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_NO_MAIL, "%d - Need MAIL command first!\n", status_bad_seq_cmds, GOTO_PREVIOUS);
 }
 
 static unsigned server_mail_from(struct selector_key *key) {
@@ -730,15 +773,15 @@ static unsigned server_mail_from(struct selector_key *key) {
 }
 
 static unsigned server_already_mail(struct selector_key *key) {
-    return server_template(key, SERVER_ALREADY_MAIL, "%d - Nested MAIL command\n", status_bad_seq_cmds, CLIENT_RCPT_TO);
+    return server_template(key, SERVER_ALREADY_MAIL, "%d - Nested MAIL command\n", status_bad_seq_cmds, GOTO_PREVIOUS);
 }
 
 static unsigned server_wrong_domain(struct selector_key *key) {
-    return server_template(key, SERVER_WRONG_DOMAIN, "%d - Invalid specified domain\n", status_mailbox_not_found ,CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_WRONG_DOMAIN, "%d - Invalid specified domain\n", status_mailbox_not_found ,GOTO_PREVIOUS);
 }
 
 static unsigned server_no_rcpt(struct selector_key *key) {
-    return server_template(key, SERVER_NO_RCPT, "%d - Need RCPT command first!\n", status_bad_seq_cmds, CLIENT_RCPT_TO);
+    return server_template(key, SERVER_NO_RCPT, "%d - Need RCPT command first!\n", status_bad_seq_cmds, GOTO_PREVIOUS);
 }
 
 static unsigned server_rcpt_to(struct selector_key *key) {
@@ -754,13 +797,17 @@ static unsigned server_mail_end(struct selector_key *key) {
 }
 
 static unsigned server_wrong_arguments(struct selector_key *key) {
-    return server_template(key, SERVER_WRONG_ARGUMENTS, "%d - Invalid arguments for command\n", status_syntax_error_in_parameters, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_WRONG_ARGUMENTS, "%d - Invalid arguments for command\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
 }
 static unsigned server_error(struct selector_key *key) {
     return server_template(key, ERROR, "%d - An error has occured. Sorry!\n", status_local_error_in_processing, CLIENT_MAIL_FROM);
 }
 static unsigned server_quit(struct selector_key *key) {
     return server_template(key, QUIT, "%d - Bye bye!\n", status_service_closing, CLOSE);
+}
+
+static unsigned server_close(struct selector_key *key) {
+    return server_template(key, CLOSE, "%d - Closing\n", status_service_closing, CLOSE);
 }
 
 static void smtp_done(struct selector_key* key);

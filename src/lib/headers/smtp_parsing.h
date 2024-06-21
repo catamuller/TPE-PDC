@@ -140,6 +140,9 @@ enum state_names {
 
   DATA_CR_STATE = 62,
   DATA_LF_STATE = 63,
+
+  PARSER_RESET_CR_STATE = 64,
+  PARSER_RESET_LF_STATE = 65,
   EQ = 91,
 };
 

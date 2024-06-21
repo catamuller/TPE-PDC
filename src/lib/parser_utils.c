@@ -67,6 +67,10 @@ void eqDATA(struct parser_event *ret, const uint8_t c) {
     type(DATA_CMP_EQ, ret, c);
 }
 
+void eqPARSERRST(struct parser_event *ret, const uint8_t c) {
+    type(PARSER_RESET_CMP_EQ, ret, c);
+}
+
 void neqDomain(struct parser_event *ret, const uint8_t c) {
     type(NEQ_DOMAIN, ret, c);
 }

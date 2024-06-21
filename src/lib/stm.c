@@ -18,6 +18,7 @@ stm_init(struct state_machine *stm) {
 
     if(stm->initial < stm->max_state) {
         stm->current = NULL;
+        stm->previous = NULL;
     } else {
         abort();
     }
@@ -42,6 +43,7 @@ void jump(struct state_machine *stm, unsigned next, struct selector_key *key) {
         if(stm->current != NULL && stm->current->on_departure != NULL) {
             stm->current->on_departure(stm->current->state, key);
         }
+        stm->previous = stm->current;
         stm->current = stm->states + next;
 
         if(NULL != stm->current->on_arrival) {

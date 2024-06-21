@@ -22,7 +22,8 @@ enum string_cmp_event_types {
     RCPT_TO_CMP_EQ,
     DATA_CMP_EQ,
     QUIT_CMP_EQ,
-    NEQ_DOMAIN
+    NEQ_DOMAIN,
+    PARSER_RESET_CMP_EQ
 };
 
 void may_eq(struct parser_event *ret, const uint8_t c);
@@ -43,6 +44,8 @@ void eqRCPT(struct parser_event *ret, const uint8_t c);
 void eqQUIT(struct parser_event *ret, const uint8_t c);
 
 void eqDATA(struct parser_event *ret, const uint8_t c);
+
+void eqPARSERRST(struct parser_event *ret, const uint8_t c);
 
 void neq(struct parser_event *ret, const uint8_t c);
 

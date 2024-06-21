@@ -32,6 +32,7 @@ struct state_machine {
     unsigned                      max_state;
     /** estado actual */
     const struct state_definition *current;
+    const struct state_definition *previous;
 };
 
 typedef struct selector_key *key;
