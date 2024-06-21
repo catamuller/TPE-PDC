@@ -57,6 +57,15 @@ enum smtp_request_state {
   request_vrfy
 };
 
+enum data_state_names {
+  DATA_ANY              = 0,
+  DATA_FIRST_CR_STATE   = 1,
+  DATA_FIRST_LF_STATE   = 2,
+  DATA_DOT              = 3,
+  DATA_SECOND_CR_STATE  = 4,
+  DATA_SECOND_LF_STATE  = 5,
+};
+
 enum state_names {
   HELO_H = 1,
   HELO_E = 2,
@@ -147,6 +156,9 @@ enum state_names {
 };
 
 struct parser * smtp_parser_init();
+struct parser * smtp_data_parser_init();
+void sendMail();
 const struct parser_event * smtp_parser_feed(struct parser * p, const uint8_t c);
 const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p);
+const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p);
 #endif

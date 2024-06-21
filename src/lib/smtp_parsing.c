@@ -1,11 +1,17 @@
 #include "headers/smtp_parsing.h"
 #include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 
 #define CR '\r'
 #define LF '\n'
 
 #define BUFFER_MAX_SIZE 1024
+#define MAX_RCPT_TO 500
+#define ID_LEN 33
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -27,6 +33,21 @@ struct parser_state_transition STATE_ACCEPT[] = {
       {.when = ANY,           .dest = 1,            .act1 = eq}
 };
 
+size_t rcptToIndex = 0;
+size_t rcptToTotal = 0;
+size_t clientRcptToIndex = 0;
+char rcptTo[MAX_RCPT_TO][BUFFER_MAX_SIZE];
+char shortRcptTo[MAX_RCPT_TO][BUFFER_MAX_SIZE];
+
+size_t mailFromIndex = 0;
+char mailFrom[BUFFER_MAX_SIZE];
+
+char subject[BUFFER_MAX_SIZE];
+char randomId[BUFFER_MAX_SIZE];
+
+size_t dataIndex = 0;
+char data[4*BUFFER_MAX_SIZE];
+
 void setCRDest(int index) {
   STATE_DOMAIN_CR[0].dest = index;
 }
@@ -37,6 +58,19 @@ void setLFDest(int index) {
 
 void setAcceptDest(int index) {
   STATE_ACCEPT[0].dest = index;
+}
+
+void _randomID(char* buffer) {
+    char charSet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
+    int setSize = strlen(charSet);
+
+    int idx;
+    int i=0;
+    for(; i<ID_LEN - 1; i++) {
+        idx = rand() % setSize;
+        buffer[i] = charSet[idx];
+    }
+    buffer[i] = '\0';
 }
 
 static const struct parser_state_transition ST_0[] = {
@@ -411,9 +445,9 @@ static const struct parser_state_transition ST_51[] = {
 };
 
 static const struct parser_state_transition ST_52[] = {
-  {.when = '@',     .dest = MAX_STATES-100,      .act1 = may_eq},
+  {.when = '@',     .dest = MAX_STATES-100,      .act1 =  MAILFROMSave},
   {.when = '\r',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
-  {.when = ANY,     .dest = FROM_SPACE,          .act1 = may_eq} // TODO: save character in string with act2
+  {.when = ANY,     .dest = FROM_SPACE,          .act1 = MAILFROMSave}
 };
 
 static const struct parser_state_transition ST_53[] = {
@@ -435,13 +469,15 @@ static const struct parser_state_transition ST_55[] = {
 };
 
 static const struct parser_state_transition ST_56[] = {
-  {.when = ' ',     .dest = TO_SPACE,  .act1 = may_eq},
-  {.when = ANY,     .dest = TO_SPACE,  .act1 = may_eq} // TODO: save character in string with act2
+  {.when = ' ',     .dest = TO_COLON,  .act1 = may_eq},
+  {.when = '@',     .dest = NEQ,       .act1 = neq},
+  {.when = ANY,     .dest = TO_SPACE,  .act1 = RCPTTOSave} // TODO: save character in string with act2
 };
 
 static const struct parser_state_transition ST_57[] = {
   {.when = '\r',    .dest = RCPT_TO_CR_STATE, .act1 = may_eq},
-  {.when = ANY,     .dest = TO_SPACE,   .act1 = may_eq}
+  {.when = ' ',     .dest = NEQ,              .act1 = neq},
+  {.when = ANY,     .dest = TO_SPACE,   .act1 = RCPTTOSave}
 };
 
 static const struct parser_state_transition ST_58[] = {
@@ -488,7 +524,34 @@ static const struct parser_state_transition ST_65[] = {
   {.when = ANY,     .dest = PARSER_RESET_LF_STATE,         .act1 = eqPARSERRST} // TODO: save data with act2
 };
 
+static const struct parser_state_transition DT_0[] = {
+  {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
+  {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
+};
 
+static const struct parser_state_transition DT_1[] = {
+  {.when = '\n',    .dest = DATA_FIRST_LF_STATE, .act1 = CLIENTDATASave},
+  {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
+};
+
+static const struct parser_state_transition DT_2[] = {
+  {.when = '.',    .dest = DATA_DOT, .act1 = CLIENTDATASave},
+  {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
+};
+
+static const struct parser_state_transition DT_3[] = {
+  {.when = '\r',    .dest = DATA_SECOND_CR_STATE, .act1 = CLIENTDATASave},
+  {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
+};
+
+static const struct parser_state_transition DT_4[] = {
+  {.when = '\n',    .dest = DATA_SECOND_LF_STATE, .act1 = eqCLIENTDATA},
+  {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
+};
+
+static const struct parser_state_transition DT_5[] = {
+  {.when = ANY,     .dest = DATA_SECOND_LF_STATE,     .act1 = eqCLIENTDATA}
+};
 
 size_t states_amount[MAX_STATES] = {
     N(ST_0),
@@ -628,9 +691,35 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_65
   };
 
+const struct parser_state_transition * data_states[MAX_STATES] = {
+  DT_0,
+  DT_1,
+  DT_2,
+  DT_3,
+  DT_4,
+  DT_5
+};
+
+size_t data_states_amount[MAX_STATES] = {
+  N(DT_0),
+  N(DT_1),
+  N(DT_2),
+  N(DT_3),
+  N(DT_4),
+  N(DT_5)
+};
 
 struct parser * smtp_parser_init() {
   struct parser_definition * def = calloc(1, sizeof(*def));
+
+  for(int i=0;i<MAX_RCPT_TO;i++) {
+    for(int j=0;j<BUFFER_MAX_SIZE;j++) {
+      rcptTo[i][j] = 0;
+    }
+  }
+  for (int j=0;j<BUFFER_MAX_SIZE;j++) {
+    mailFrom[j] = 0;
+  }
 
   FILE * domainFile = fopen("../domain.txt","rb");
   
@@ -644,7 +733,7 @@ struct parser * smtp_parser_init() {
     domain_states[j] = calloc(2, sizeof(struct parser_state_transition));
     domain_states[j][0].when = domain[j]; 
     domain_states[j][0].dest = i+1; 
-    domain_states[j][0].act1 = may_eq; 
+    domain_states[j][0].act1 = MAILFROMSave; 
 
     domain_states[j][1].when = ANY; 
     domain_states[j][1].dest = WRONG_DOMAIN; 
@@ -668,6 +757,19 @@ struct parser * smtp_parser_init() {
   return parser_init(parser_no_classes(), def);
 }
 
+struct parser * smtp_data_parser_init() {
+  for (int j=0;j<4*BUFFER_MAX_SIZE;j++) {
+    data[j] = 0;
+  }
+
+  struct parser_definition * def = calloc(1, sizeof(*def));
+
+  def->states = data_states;
+  def->states_n = data_states_amount;
+  
+  return parser_init(parser_no_classes(), def);
+}
+
 const struct parser_event * smtp_parser_feed(struct parser * p, const uint8_t c) {
   return parser_feed(p, c);
 }
@@ -679,6 +781,31 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
   while(buffer_can_read(buff)) {
     const uint8_t c = buffer_read(buff);
     e1 = smtp_parser_feed(p, c);
+    switch(e1->type) {
+      case RCPTTOSAVE_CMP_EQ:
+        rcptTo[clientRcptToIndex][rcptToIndex++] = e1->data[0];
+        break;
+      case RCPT_TO_CMP_EQ:
+        rcptTo[clientRcptToIndex++][rcptToIndex] = '\0';
+        rcptToIndex = 0;
+        break;
+      case MAILFROMSAVE_CMP_EQ:
+        mailFrom[mailFromIndex++] = e1->data[0];
+        break;
+      case MAIL_FROM_CMP_EQ:
+        mailFrom[mailFromIndex] = '\0';
+        mailFromIndex = 0;
+        break;
+      case STRING_CMP_NEQ:
+        clientRcptToIndex = 0;
+        rcptToIndex = 0;
+        mailFromIndex = 0;
+        break;
+      case NEQ_DOMAIN:
+        mailFromIndex = 0;
+        break;
+    }
+
     if (CRflag && c == LF)
       break;
     if (c == CR)
@@ -686,3 +813,170 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
   }
   return e1;
 }
+
+const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p) {
+  const struct parser_event * e1;
+  bool CRflag = false;
+  /*
+  1- read first \r\n
+  2- read .
+  */
+  int exitStage = 0;
+
+  while(buffer_can_read(buff)) {
+    const uint8_t c = buffer_read(buff);
+    e1 = smtp_parser_feed(p, c);
+
+    if (e1->type == DATASAVE_CMP_EQ) {
+      data[dataIndex++] = e1->data[0];
+    } else if (e1->type == CLIENT_DATA_CMP_EQ) {
+        rcptToTotal = clientRcptToIndex;
+        rcptToIndex = 0;
+        mailFromIndex = 0;
+    }
+
+    if (c == CR) {
+      CRflag = true;
+      continue;
+    }
+    if (CRflag && c == LF) {
+      //primer CRLF
+      if(exitStage == 0){
+        CRflag = false;
+        exitStage++;
+        continue;
+      }
+      //segundo CRLF
+      else if(exitStage == 2){
+        if (dataIndex >= 2)
+          data[dataIndex-2] = '\0';
+        break;
+      }
+    }
+    if (c == '.' && exitStage == 1) {
+      exitStage++;
+      continue;
+    }
+    //si es cualquier otra cosa
+    exitStage = 0;
+    CRflag = false;
+
+  }
+  return e1;
+}
+
+void computeLPSArray(char *pat, int M, int *lps) {
+    int len = 0; 
+    int i;
+ 
+    lps[0] = 0;
+    i = 1;
+ 
+    while (i < M) {
+        if (pat[i] == pat[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len != 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+}
+ 
+int KMPSearch(char *pat, char *txt) {
+    int M = strlen(pat);
+    int N = strlen(txt);
+ 
+    int *lps = (int *) malloc(sizeof(int) * M);
+    int j = 0; 
+
+    computeLPSArray(pat, M, lps);
+ 
+    int i = 0;
+    while (i < N) {
+        if (pat[j] == txt[i]) {
+            j++;
+            i++;
+        }
+        if (j == M) {
+            return i-j;
+            //j = lps[j - 1];
+        } else if (i < N && pat[j] != txt[i]) {
+            if (j != 0)
+                j = lps[j - 1];
+            else
+                i = i + 1;
+        }
+    }
+    free(lps);
+    return -1;
+}
+
+
+
+void parseSubject(char * data) {
+  strcpy(subject, "EMPTY");
+  int index = KMPSearch("Subject:", data);
+  if (index == -1)
+    return;
+  int i = 0;
+  index += strlen("Subject:");
+  while(data[index] == ' ') index++;
+  for(;data[index] != '\n';index++, i++) {
+    subject[i] = data[index];
+  }
+  if (subject[i-1] == '\r')
+    subject[i-1] = '\0';
+  subject[i] = '\0';
+}
+
+void parseRcptTo(char rcptto[][BUFFER_MAX_SIZE], size_t index) {
+  size_t i = 0;
+  for(; rcptto[index][i] != '@' && rcptto[index][i]; i++) {
+    shortRcptTo[index][i] = rcptto[index][i];
+  }
+  shortRcptTo[index][i] = '\0';
+}
+
+void sendMail() {
+  struct stat st = {0};
+  parseSubject(data);
+  for(size_t i=0;i<rcptToTotal;i++) {
+    if (rcptTo[i][0] == '\0')
+      continue;
+    parseRcptTo(rcptTo, i);
+    char dirname[4*BUFFER_MAX_SIZE] = "mail_dir/";
+    char * dirnameWithName = strcat(dirname, shortRcptTo[i]);
+    if (stat(dirname, &st) == -1)
+      if (mkdir(dirname, 0700) == -1)  // if directory does not exist
+        continue;     
+    dirnameWithName = strcat(dirnameWithName, "/");
+    srand(time(NULL));
+    _randomID(randomId);
+    char * mailPlusSubject = strcat(dirnameWithName, subject);
+    mailPlusSubject = strcat(mailPlusSubject, "_");
+    char * subjectPlusRandomId = strcat(mailPlusSubject, randomId);
+    FILE * mail = fopen(subjectPlusRandomId, "wa");
+    if (mail == NULL)
+      continue;
+    char buffer[4*BUFFER_MAX_SIZE] = {0};
+    for(size_t k=0; k<rcptToTotal;k++) {
+      strcat(buffer, "RCPT TO: ");
+      strcat(buffer, rcptTo[k]);
+      strcat(buffer, "\n");
+    }
+    fprintf(mail, "MAIL FROM: %s\n%s\n%s\n", mailFrom, buffer, data);
+    fclose(mail);
+  }
+  rcptToTotal = 0;
+  clientRcptToIndex = 0;
+  //free(mailPlusSubject);
+  //free(subjectPlusRandomId);
+}
+
+

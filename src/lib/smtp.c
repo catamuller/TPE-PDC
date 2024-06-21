@@ -190,6 +190,8 @@ struct smtp {
     // struct smtp_request request;
     // struct smtp_request_parser request_parser;
     Parser smtp_parser;
+    Parser smtp_data_parser;
+
 
 };
 
@@ -232,6 +234,7 @@ static unsigned server_wrong_domain(struct selector_key *key);
 static unsigned server_no_rcpt(struct selector_key *key);
 static unsigned server_rcpt_to(struct selector_key *key);
 static unsigned server_data(struct selector_key *key);
+static unsigned client_read_data(struct selector_key * key);
 static unsigned server_mail_end(struct selector_key *key);
 static unsigned server_wrong_arguments(struct selector_key *key);
 static unsigned server_error(struct selector_key *key);
@@ -333,7 +336,7 @@ static const struct state_definition client_statbl[] = {
         .state            = CLIENT_MAIL_CONTENT,
         .on_arrival       = NULL,
         .on_departure     = NULL,
-        .on_read_ready    = client_read         // TODO - cambiar por otra función que acepte <CR><LF>.<CR><LF>!!
+        .on_read_ready    = client_read_data         // TODO - cambiar por otra función que acepte <CR><LF>.<CR><LF>!!
     },
     {
         .state            = SERVER_MAIL_END,
@@ -403,6 +406,7 @@ void smtp_passive_accept(struct selector_key * key) {
     // memcpy(&state->raw_buff_write, "Hello\n", 6);
     // buffer_write(&state->write_buffer, 6);
     state->smtp_parser = smtp_parser_init();
+    state->smtp_data_parser = smtp_data_parser_init();
     //smtp_request_parser_init(&state->request_parser);
 
     if(SELECTOR_SUCCESS != selector_register(key->s, client, &smtp_handler, OP_READ, state)) {
@@ -446,7 +450,7 @@ static unsigned client_read(struct selector_key * key) {
 
     struct smtp * state = ATTACHMENT(key);
     unsigned ret = ATTACHMENT(key)->stm.current->state;
-    int r = recv(key->fd, state->read_buffer.read, 1023, 0);
+    int r = recv(key->fd, state->read_buffer.read, BUFFER_MAX_SIZE-1, 0);
     if(r > 0) {
         state->read_buffer.data[r] = 0;
         puts((char*)state->read_buffer.read);
@@ -519,6 +523,13 @@ static unsigned client_read(struct selector_key * key) {
                 // }
                 ret = SERVER_DATA;
                 break;
+            // case CLIENT_DATA_CMP_EQ:
+            //     selector_set_interest_key(key, OP_WRITE);
+            //     buffer_reset(&state->read_buffer);
+            //     parser_reset(state->smtp_parser);
+            //     sendMail();
+            //     ret = SERVER_MAIL_END;
+            //     break;
             case NEQ_DOMAIN:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
@@ -564,6 +575,30 @@ static unsigned client_read(struct selector_key * key) {
 
     return ret;
 }
+
+static unsigned client_read_data(struct selector_key * key) {
+    struct smtp * state = ATTACHMENT(key);
+    unsigned ret = CLIENT_MAIL_CONTENT;
+    int r = recv(key->fd, state->read_buffer.read, BUFFER_MAX_SIZE-1, 0);
+    if(r > 0) {
+        state->read_buffer.data[r] = 0;
+        puts((char*)state->read_buffer.read);
+        buffer_write_adv(&state->read_buffer, r);
+        struct parser_event * event = smtp_data_parser_consume(&state->read_buffer, state->smtp_data_parser);
+        if (event->type == CLIENT_DATA_CMP_EQ) {
+            selector_set_interest_key(key, OP_WRITE);
+            buffer_reset(&state->read_buffer);
+            parser_reset(state->smtp_parser);
+            parser_reset(state->smtp_data_parser);
+            sendMail();
+            ret = SERVER_MAIL_END;
+        }
+    } else {
+        ret = ERROR;
+    }
+    return ret;
+}
+
 
 static unsigned server_template(struct selector_key * key, int returnValue, const char * format, int code, int success) {
     unsigned ret = returnValue;

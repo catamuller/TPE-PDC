@@ -31,7 +31,6 @@ int main(int argc, char ** argv) {
   unsigned int port = 2525;
 
   struct smtpargs args;
-  args.mail_dir = "mail";
 
   parse_args(argc, argv, &args);
 
@@ -47,6 +46,7 @@ int main(int argc, char ** argv) {
   if (init_addresses(addresses, &err_msg) < 0) goto finally;
   ip_addr(addresses, port);
   if (init_sockets(master_sockets, &err_msg) < 0) goto finally;
+  args.mail_dir = "mail_dir";
   mkmaildir(args.mail_dir);
   
   fprintf(stdout, "Listening on SMTP port %d\n", port);
