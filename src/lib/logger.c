@@ -16,8 +16,6 @@ pthread_mutex_t logger_mutex;
 time_t timer;
 struct tm* tm_info;
 
-//TODO si escribis un string de mas de 512 caracteres tiene la chance de perder parte del log
-
 int init_logger(char *logLocation) {
     log_out = fopen(logLocation, "a");
     canWrite = (log_out == NULL) ? ERROR : SUCCESS;

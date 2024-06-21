@@ -784,6 +784,9 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
     const uint8_t c = buffer_read(buff);
     e1 = smtp_parser_feed(p, c);
     switch(e1->type) {
+      case HELO_CMP_EQ:
+        user[userIndex] = '\0';
+        break;
       case RCPTTOSAVE_CMP_EQ:
         rcptTo[clientRcptToIndex][rcptToIndex++] = e1->data[0];
         break;
@@ -984,4 +987,7 @@ void sendMail() {
   //free(subjectPlusRandomId);
 }
 
+char * getCurrentUser(void) {
+    return user;
+}
 

@@ -155,9 +155,10 @@ enum state_names {
   EQ = 91,
 };
 
-struct parser * smtp_parser_init();
-struct parser * smtp_data_parser_init();
-void sendMail();
+struct parser * smtp_parser_init(void);
+struct parser * smtp_data_parser_init(void);
+void sendMail(void);
+char * getCurrentUser(void);
 const struct parser_event * smtp_parser_feed(struct parser * p, const uint8_t c);
 const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p);
 const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p);
