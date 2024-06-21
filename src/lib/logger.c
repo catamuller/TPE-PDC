@@ -14,7 +14,7 @@ int bufferWritten = 0;
 
 pthread_mutex_t logger_mutex;
 
-//TODO si escribis un string de mas de 512 caracteres tiene la chance de pisar memoria
+//TODO si escribis un string de mas de 512 caracteres tiene la chance de perder parte del log
 
 int init_logger(char *logLocation) {
     log_out = fopen(logLocation, "a");
