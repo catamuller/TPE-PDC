@@ -633,10 +633,11 @@ struct parser * smtp_parser_init() {
   struct parser_definition * def = calloc(1, sizeof(*def));
 
   FILE * domainFile = fopen("../domain.txt","rb");
+  
   if (domainFile == NULL)
     domainFile = fopen("./domain.txt","rb");
   if (domainFile != NULL) {
-    fread(domain, sizeof(char), BUFFER_MAX_SIZE, domainFile);
+    domain[fread(domain, sizeof(char), BUFFER_MAX_SIZE, domainFile)] = '\0';
   }
   int i = MAX_STATES - 100;
   for(int j = 0;domain[j];j++, i++) {

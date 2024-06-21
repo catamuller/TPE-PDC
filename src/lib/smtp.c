@@ -168,7 +168,7 @@ enum smtp_state {
     // estados terminales
    SERVER_WRONG_ARGUMENTS,
    ERROR,
-   QUIT, 
+   QUIT,    // todo: cierra todo
    CLOSE
 };
 
@@ -204,147 +204,6 @@ static const struct fd_handler smtp_handler = {
     .handle_close  = smtp_close,
     .handle_block  = smtp_block,
 };
-
-static void client_read_init(const unsigned state, struct selector_key * key) {
-    // TODO
-    //Parser *st = &ATTACHMENT(key)->smtp_parser;
-    //st->request = &ATTACHMENT(key)->request;
-    //st->state = request_helo;
-    //memset(st->request, 0, sizeof(*(st->request)));
-}
-
-static void client_read_close(const unsigned state, struct selector_key *key) { 
-    // TODO
-    //smtp_request_close(&ATTACHMENT(key)->request_parser);
-}
-
-static void server_hello_write_init(const unsigned state, struct selector_key * key) {
-    // TODO
-}
-
-static void server_hello_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_greeting_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_greeting_write_close (const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_ehlo_write_init(const unsigned state, struct selector_key * key) {
-    // TODO
-}
-
-static void server_ehlo_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_already_greeted_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_already_greeted_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_mail_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_mail_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_mail_from_init(const unsigned state, struct selector_key *key){
-    // TODO
-}
-
-static void server_mail_from_close(const unsigned state, struct selector_key *key){
-    // TODO
-}
-
-static void server_already_mail_write_init(const unsigned state, struct selector_key *key){
-    // TODO
-}
-
-static void server_already_mail_write_close(const unsigned state, struct selector_key *key){
-    // TODO
-}
-
-static void server_wrong_domain_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_wrong_domain_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_rcpt_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_no_rcpt_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_rcpt_to_init(const unsigned state, struct selector_key *key){
-    // TODO
-}
-
-static void server_rcpt_to_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_data_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_data_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_wrong_arguments_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_mail_end_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_mail_end_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_wrong_arguments_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_error_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_error_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_quit_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_quit_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_close_write_init(const unsigned state, struct selector_key *key) {
-    // TODO
-}
-
-static void server_close_write_close(const unsigned state, struct selector_key *key) {
-    // TODO
-}
 
 // static void request_read_init(const unsigned state,struct selector_key *key){
 //     struct request_parser *st = &ATTACHMENT(key)->request_parser;
@@ -382,128 +241,128 @@ static unsigned server_close(struct selector_key *key);
 static const struct state_definition client_statbl[] = {
     {
         .state            = CLIENT_HELLO,
-        .on_arrival       = client_read_init,
-        .on_departure     = client_read_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
         .state            = SERVER_NO_GREETING,
-        .on_arrival       = server_no_greeting_write_init,
-        .on_departure     = server_no_greeting_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_no_greeting
     },
     {
         .state            = SERVER_HELLO,
-        .on_arrival       = server_hello_write_init,
-        .on_departure     = server_hello_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_hello,
     },
     {
         .state            = SERVER_EHLO,
-        .on_arrival       = server_ehlo_write_init,
-        .on_departure     = server_ehlo_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_ehlo,
     },
     {
         .state            = SERVER_ALREADY_GREETED,
-        .on_arrival       = server_already_greeted_write_init,
-        .on_departure     = server_already_greeted_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_already_greeted
     },
     {
         .state            = SERVER_NO_MAIL,
-        .on_arrival       = server_no_mail_write_init,
-        .on_departure     = server_no_mail_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_no_mail
     },
     {
         .state            = CLIENT_MAIL_FROM,
-        .on_arrival       = client_read_init,
-        .on_departure     = client_read_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
         .state            = SERVER_ALREADY_MAIL,
-        .on_arrival       = server_already_mail_write_init,
-        .on_departure     = server_already_mail_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_already_mail
     },
     {
         .state            = SERVER_MAIL_FROM,
-        .on_arrival       = server_mail_from_init,
-        .on_departure     = server_mail_from_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_mail_from,
     },
     {
         .state            = SERVER_WRONG_DOMAIN,
-        .on_arrival       = server_wrong_domain_init,
-        .on_departure     = server_wrong_domain_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_wrong_domain
     },
     {
         .state            = SERVER_NO_RCPT,
-        .on_arrival       = server_no_rcpt_write_init,
-        .on_departure     = server_no_rcpt_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_no_rcpt
     },
     {
         .state            = CLIENT_RCPT_TO,
-        .on_arrival       = client_read_init,
-        .on_departure     = client_read_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
         .state            = SERVER_RCPT_TO,
-        .on_arrival       = server_rcpt_to_init,
-        .on_departure     = server_rcpt_to_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_rcpt_to,
     },
     {
         .state            = CLIENT_DATA,
-        .on_arrival       = client_read_init,
-        .on_departure     = client_read_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
         .state            = SERVER_DATA,
-        .on_arrival       = server_data_write_init,
-        .on_departure     = server_data_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_data
     },
     {
         .state            = CLIENT_MAIL_CONTENT,
-        .on_arrival       = client_read_init,
-        .on_departure     = client_read_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_read_ready    = client_read         // TODO - cambiar por otra función que acepte <CR><LF>.<CR><LF>!!
     },
     {
         .state            = SERVER_MAIL_END,
-        .on_arrival       = server_mail_end_write_init,
-        .on_departure     = server_mail_end_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_mail_end
     },
     {
         .state            = SERVER_WRONG_ARGUMENTS,
-        .on_arrival       = server_wrong_arguments_write_init,
-        .on_departure     = server_wrong_arguments_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_wrong_arguments
     },
     {
         .state            = ERROR,
-        .on_arrival       = server_error_write_init,
-        .on_departure     = server_error_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_error
     },
     {
         .state            = QUIT,
-        .on_arrival       = server_quit_write_init,
-        .on_departure     = server_quit_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_quit
     },
     {
         .state            = CLOSE,
-        .on_arrival       = server_close_write_init,
-        .on_departure     = server_close_write_close,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
         .on_write_ready   = server_close
     }
 };
@@ -538,7 +397,7 @@ void smtp_passive_accept(struct selector_key * key) {
     buffer_init(&state->write_buffer, N(state->raw_buff_write), state->raw_buff_write);
     state->stm.states = client_statbl;
     state->stm.initial = CLIENT_HELLO;
-    state->stm.max_state = QUIT;
+    state->stm.max_state = CLOSE;
     stm_init(&state->stm);
     // TODO: creo que esto hay que volarlo mas adelante
     // memcpy(&state->raw_buff_write, "Hello\n", 6);
@@ -797,7 +656,7 @@ static unsigned server_mail_end(struct selector_key *key) {
 }
 
 static unsigned server_wrong_arguments(struct selector_key *key) {
-    return server_template(key, SERVER_WRONG_ARGUMENTS, "%d - Invalid arguments for command\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+    return server_template(key, SERVER_WRONG_ARGUMENTS, "%d - Invalid arguments or syntax error\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
 }
 static unsigned server_error(struct selector_key *key) {
     return server_template(key, ERROR, "%d - An error has occured. Sorry!\n", status_local_error_in_processing, CLIENT_MAIL_FROM);
