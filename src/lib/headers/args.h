@@ -12,6 +12,9 @@ struct user {
 
 struct smtpargs {
 	char *			mail_dir;
+    char *          log_dir;
+
+    char *          log_file;
 
     char           *socks_addr;
     unsigned short  socks_port;

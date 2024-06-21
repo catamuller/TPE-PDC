@@ -16,6 +16,7 @@
 #include "lib/headers/selector.h"
 #include "lib/headers/utils.h"
 #include "lib/headers/smtp.h"
+#include "lib/headers/logger.h"
 
 #define MAX_REQUESTS 20
 #define INITIAL_SELECTOR 1024
@@ -48,6 +49,12 @@ int main(int argc, char ** argv) {
   ip_addr(addresses, port);
   if (init_sockets(master_sockets, &err_msg) < 0) goto finally;
   mkmaildir(args.mail_dir);
+
+  args.log_dir = "logs";
+  mkmaildir(args.log_dir);
+
+  args.log_file = "logs/log.txt";
+  init_logger(args.log_file);
   
   fprintf(stdout, "Listening on SMTP port %d\n", port);
   if (setsockopts(master_sockets, &err_msg) < 0) goto finally;
@@ -115,6 +122,6 @@ int main(int argc, char ** argv) {
     selector_destroy(selector);
   selector_close();
   close_sockets(master_sockets);
+  close_logger();
   return 0;
-  
 }
