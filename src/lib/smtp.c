@@ -172,6 +172,12 @@ enum smtp_state {
    CLOSE
 };
 
+static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
+                             "SERVER_EHLO", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
+                             "SERVER_MAIL_FROM", "SERVER_WRONG_DOMAIN", "SERVER_NO_RCPT", "CLIENT_RCPT_TO", "SERVER_RCPT_TO",
+                             "CLIENT_DATA", "SERVER_DATA", "CLIENT_MAIL_CONTENT", "SERVER_MAIL_END", "SERVER_WRONG_ARGUMENTS",
+                             "ERROR", "QUIT", "CLOSE"};
+
 
 struct smtp {
 
@@ -743,4 +749,8 @@ static void smtp_done(struct selector_key* key) {
             close(fds[i]);
         }
     }
+}
+
+char * get_state_name(unsigned smtp_state) {
+    return state_names[smtp_state];
 }

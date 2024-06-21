@@ -4,6 +4,8 @@
  */
 #include <stdlib.h>
 #include "headers/stm.h"
+#include "headers/logger.h"
+#include "headers/smtp.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -50,6 +52,7 @@ void jump(struct state_machine *stm, unsigned next, struct selector_key *key) {
             stm->current->on_arrival(stm->current->state, key);
         }
     }
+    log_data("%s entered %s state", "User", get_state_name(next));
 }
 
 unsigned

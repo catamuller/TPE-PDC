@@ -4,8 +4,8 @@
 
 #define SUCCESS 0
 #define ERROR 1
-#define BUFFER_SIZE 256
-#define BUFFER_USED_LIMIT (BUFFER_SIZE - 16)
+#define BUFFER_SIZE 1024
+#define BUFFER_USED_LIMIT 512
 
 FILE *log_out = NULL;
 int canWrite = ERROR;
@@ -90,7 +90,7 @@ int log_data(char *str, ...) {
 
     bufferWritten += sprintf(logBuffer + bufferWritten, "%s", buffer);
 
-    int remainingBuffer = BUFFER_USED_LIMIT - bufferWritten;
+    int remainingBuffer = BUFFER_USED_LIMIT - bufferWritten - 1;
     int written = vsnprintf(logBuffer + bufferWritten, remainingBuffer, str, args);
     bufferWritten += written;
 
