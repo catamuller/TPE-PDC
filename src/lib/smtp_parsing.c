@@ -5,12 +5,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdio.h>
-
+#include <pthread.h>
+#include "headers/smtp.h"
 #define CR '\r'
 #define LF '\n'
-
 #define BUFFER_MAX_SIZE 1024
-#define MAX_RCPT_TO 500
 #define ID_LEN 33
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
@@ -33,23 +32,7 @@ struct parser_state_transition STATE_ACCEPT[] = {
       {.when = ANY,           .dest = 1,            .act1 = eq}
 };
 
-size_t rcptToIndex = 0;
-size_t rcptToTotal = 0;
-size_t clientRcptToIndex = 0;
-char rcptTo[MAX_RCPT_TO][BUFFER_MAX_SIZE];
-char shortRcptTo[MAX_RCPT_TO][BUFFER_MAX_SIZE];
 
-size_t mailFromIndex = 0;
-char mailFrom[BUFFER_MAX_SIZE];
-
-char subject[BUFFER_MAX_SIZE];
-char randomId[BUFFER_MAX_SIZE];
-
-size_t dataIndex = 0;
-char data[4*BUFFER_MAX_SIZE];
-
-char user[BUFFER_MAX_SIZE];
-size_t userIndex = 0;
 
 void setCRDest(int index) {
   STATE_DOMAIN_CR[0].dest = index;
@@ -711,16 +694,16 @@ size_t data_states_amount[MAX_STATES] = {
   N(DT_5)
 };
 
-struct parser * smtp_parser_init() {
+struct parser * smtp_parser_init(client_state* state) {
   struct parser_definition * def = calloc(1, sizeof(*def));
 
   for(int i=0;i<MAX_RCPT_TO;i++) {
     for(int j=0;j<BUFFER_MAX_SIZE;j++) {
-      rcptTo[i][j] = 0;
+      state->rcptTo[i][j] = 0;
     }
   }
   for (int j=0;j<BUFFER_MAX_SIZE;j++) {
-    mailFrom[j] = 0;
+    state->mailFrom[j] = 0;
   }
 
   FILE * domainFile = fopen("../domain.txt","rb");
@@ -759,9 +742,9 @@ struct parser * smtp_parser_init() {
   return parser_init(parser_no_classes(), def);
 }
 
-struct parser * smtp_data_parser_init() {
+struct parser * smtp_data_parser_init(client_state * state) {
   for (int j=0;j<4*BUFFER_MAX_SIZE;j++) {
-    data[j] = 0;
+    state->data[j] = 0;
   }
 
   struct parser_definition * def = calloc(1, sizeof(*def));
@@ -776,41 +759,52 @@ const struct parser_event * smtp_parser_feed(struct parser * p, const uint8_t c)
   return parser_feed(p, c);
 }
 
-const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p) {
+const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p, client_state * state) {
   const struct parser_event * e1;
   bool CRflag = false;
+
 
   while(buffer_can_read(buff)) {
     const uint8_t c = buffer_read(buff);
     e1 = smtp_parser_feed(p, c);
     switch(e1->type) {
       case HELO_CMP_EQ:
-        user[userIndex] = '\0';
+        state->user[state->userIndex] = '\0';
+        // smtp->user[smtp->userIndex] = '\0';
+        // user[userIndex] = '\0';
         break;
       case RCPTTOSAVE_CMP_EQ:
-        rcptTo[clientRcptToIndex][rcptToIndex++] = e1->data[0];
+        state->rcptTo[state->clientRcptToIndex][state->rcptToIndex++]=e1->data[0];
+        //rcptTo[clientRcptToIndex][rcptToIndex++] = e1->data[0];
         break;
       case RCPT_TO_CMP_EQ:
-        rcptTo[clientRcptToIndex++][rcptToIndex] = '\0';
-        rcptToIndex = 0;
+        state->rcptTo[state->clientRcptToIndex++][state->rcptToIndex]='\0';
+        //rcptTo[clientRcptToIndex++][rcptToIndex] = '\0';
+        state->rcptToIndex = 0;
         break;
       case MAILFROMSAVE_CMP_EQ:
-        mailFrom[mailFromIndex++] = e1->data[0];
+        state->mailFrom[state->mailFromIndex++]=e1->data[0];
+        //mailFrom[mailFromIndex++] = e1->data[0];
         break;
       case MAIL_FROM_CMP_EQ:
-        mailFrom[mailFromIndex] = '\0';
-        mailFromIndex = 0;
+        state->mailFrom[state->mailFromIndex]='\0';
+        //mailFrom[mailFromIndex] = '\0';
+        state->mailFromIndex = 0;
         break;
       case STRING_CMP_NEQ:
-        clientRcptToIndex = 0;
-        rcptToIndex = 0;
-        mailFromIndex = 0;
+        state->clientRcptToIndex = 0;
+        //rcptToIndex = 0;
+        state->rcptToIndex = 0;
+        state->mailFromIndex = 0;
+        //mailFromIndex = 0;
         break;
       case NEQ_DOMAIN:
-        mailFromIndex = 0;
+        state->mailFromIndex = 0;
+        //mailFromIndex = 0;
         break;
       case USERSAVE_CMP_EQ:
-        user[userIndex++] = e1->data[0];
+        state->user[state->userIndex++] = e1->data[0];
+        //user[userIndex++] = e1->data[0];
         break;
     }
 
@@ -822,7 +816,7 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
   return e1;
 }
 
-const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p) {
+const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p, client_state * state, size_t * data_size) {
   const struct parser_event * e1;
   bool CRflag = false;
   /*
@@ -836,12 +830,14 @@ const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parse
     e1 = smtp_parser_feed(p, c);
 
     if (e1->type == DATASAVE_CMP_EQ) {
-      data[dataIndex++] = e1->data[0];
+      state->data[state->dataIndex++] = e1->data[0];
     } else if (e1->type == CLIENT_DATA_CMP_EQ) {
-        rcptToTotal = clientRcptToIndex;
-        rcptToIndex = 0;
-        mailFromIndex = 0;
+        state->rcptToTotal = state->clientRcptToIndex;
+        state->rcptToIndex = 0;
+        state->mailFromIndex = 0;
     }
+
+    //*data_size++;
 
     if (c == CR) {
       CRflag = true;
@@ -856,8 +852,8 @@ const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parse
       }
       //segundo CRLF
       else if(exitStage == 2){
-        if (dataIndex >= 2)
-          data[dataIndex-2] = '\0';
+        if (state->dataIndex >= 2)
+          state->data[state->dataIndex-2] = '\0';
         break;
       }
     }
@@ -927,67 +923,65 @@ int KMPSearch(char *pat, char *txt) {
 
 
 
-void parseSubject(char * data) {
-  strcpy(subject, "EMPTY");
-  int index = KMPSearch("Subject:", data);
+void parseSubject(client_state * state) {
+  strcpy(state->subject, "EMPTY");
+  int index = KMPSearch("Subject:", state->data);
   if (index == -1)
     return;
   int i = 0;
   index += strlen("Subject:");
-  while(data[index] == ' ') index++;
-  for(;data[index] != '\n';index++, i++) {
-    subject[i] = data[index];
+  while(state->data[index] == ' ') index++;
+  for(;state->data[index] != '\n';index++, i++) {
+    state->subject[i] = state->data[index];
   }
-  if (subject[i-1] == '\r')
-    subject[i-1] = '\0';
-  subject[i] = '\0';
+  if (state->subject[i-1] == '\r')
+    state->subject[i-1] = '\0';
+  state->subject[i] = '\0';
 }
 
-void parseRcptTo(char rcptto[][BUFFER_MAX_SIZE], size_t index) {
+void parseRcptTo(char rcptto[][BUFFER_MAX_SIZE],size_t index,client_state* state) {
   size_t i = 0;
   for(; rcptto[index][i] != '@' && rcptto[index][i]; i++) {
-    shortRcptTo[index][i] = rcptto[index][i];
+    state->shortRcptTo[index][i] = rcptto[index][i];
   }
-  shortRcptTo[index][i] = '\0';
+  state->shortRcptTo[index][i] = '\0';
 }
 
-void sendMail() {
+void sendMail(client_state * state) {
   struct stat st = {0};
-  parseSubject(data);
-  for(size_t i=0;i<rcptToTotal;i++) {
-    if (rcptTo[i][0] == '\0')
+  parseSubject(state);
+  for(size_t i=0;i<state->rcptToTotal;i++) {
+    if (state->rcptTo[i][0] == '\0')
       continue;
-    parseRcptTo(rcptTo, i);
+    parseRcptTo(state->rcptTo, i,state);
     char dirname[4*BUFFER_MAX_SIZE] = "mail_dir/";
-    char * dirnameWithName = strcat(dirname, shortRcptTo[i]);
+    char * dirnameWithName = strcat(dirname, state->shortRcptTo[i]);
     if (stat(dirname, &st) == -1)
       if (mkdir(dirname, 0700) == -1)  // if directory does not exist
         continue;     
     dirnameWithName = strcat(dirnameWithName, "/");
     srand(time(NULL));
-    _randomID(randomId);
-    char * mailPlusSubject = strcat(dirnameWithName, subject);
+    _randomID(state->randomId);
+    char * mailPlusSubject = strcat(dirnameWithName, state->subject);
     mailPlusSubject = strcat(mailPlusSubject, "_");
-    char * subjectPlusRandomId = strcat(mailPlusSubject, randomId);
+    char * subjectPlusRandomId = strcat(mailPlusSubject, state->randomId);
     FILE * mail = fopen(subjectPlusRandomId, "wa");
     if (mail == NULL)
       continue;
     char buffer[4*BUFFER_MAX_SIZE] = {0};
-    for(size_t k=0; k<rcptToTotal;k++) {
+    for(size_t k=0; k<state->rcptToTotal;k++) {
       strcat(buffer, "RCPT TO: ");
-      strcat(buffer, rcptTo[k]);
+      strcat(buffer, state->rcptTo[k]);
       strcat(buffer, "\n");
     }
-    fprintf(mail, "MAIL FROM: %s\n%s\n%s\n", mailFrom, buffer, data);
+    fprintf(mail, "MAIL FROM: %s\n%s\n%s\n", state->mailFrom, buffer, state->data);
     fclose(mail);
   }
-  rcptToTotal = 0;
-  clientRcptToIndex = 0;
+  state->rcptToTotal = 0;
+  state->clientRcptToIndex = 0;
   //free(mailPlusSubject);
   //free(subjectPlusRandomId);
 }
 
-char * getCurrentUser(void) {
-    return user;
-}
+
 

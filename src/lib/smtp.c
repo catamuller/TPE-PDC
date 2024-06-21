@@ -6,8 +6,10 @@
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>  // close
-#include <pthread.h>
+#include <netdb.h>
+
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include <arpa/inet.h>
 
@@ -21,9 +23,12 @@
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 #define ATTACHMENT(key) ( (struct smtp *)(key)->data)
 
-#define BUFFER_MAX_SIZE 1024
-
 #define GOTO_PREVIOUS MAX_STATES
+
+size_t total_connections = 0;
+size_t current_connections = 0;
+size_t transferred_bytes = 0;
+size_t total_mails_sent = 0;
 
 /** maquina de estados general */
 enum smtp_state {
@@ -179,7 +184,7 @@ static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELL
                              "ERROR", "QUIT", "CLOSE"};
 
 
-struct smtp {
+typedef struct smtp {
 
     /** informacion del cliente */
     size_t client_fd;
@@ -197,9 +202,10 @@ struct smtp {
     // struct smtp_request_parser request_parser;
     Parser smtp_parser;
     Parser smtp_data_parser;
+    
+    client_state * state;
 
-
-};
+} smtp;
 
 static void smtp_read(struct selector_key *key);
 static void smtp_write(struct selector_key *key);
@@ -407,17 +413,29 @@ void smtp_passive_accept(struct selector_key * key) {
     state->stm.states = client_statbl;
     state->stm.initial = CLIENT_HELLO;
     state->stm.max_state = CLOSE;
+
+    char portstr[6] = {0};
+    getnameinfo((struct sockaddr*)&client_addr, sizeof(struct sockaddr_storage), state->stm.currentUser, sizeof(state->stm.currentUser), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
+    strcat(state->stm.currentUser, ":");
+    strcat(state->stm.currentUser, portstr);
+
     stm_init(&state->stm);
+    
     // TODO: creo que esto hay que volarlo mas adelante
     // memcpy(&state->raw_buff_write, "Hello\n", 6);
     // buffer_write(&state->write_buffer, 6);
-    state->smtp_parser = smtp_parser_init();
-    state->smtp_data_parser = smtp_data_parser_init();
+    state->state = calloc(1, sizeof(client_state));
+    state->smtp_parser = smtp_parser_init(state->state);
+    state->smtp_data_parser = smtp_data_parser_init(state->state);
+    
+   
     //smtp_request_parser_init(&state->request_parser);
 
     if(SELECTOR_SUCCESS != selector_register(key->s, client, &smtp_handler, OP_READ, state)) {
         goto fail;
     }
+    total_connections++;
+    current_connections++;
     return;
 fail:
     if(client != -1) {
@@ -461,7 +479,7 @@ static unsigned client_read(struct selector_key * key) {
         state->read_buffer.data[r] = 0;
         puts((char*)state->read_buffer.read);
         buffer_write_adv(&state->read_buffer, r);
-        struct parser_event * event = smtp_parser_consume(&state->read_buffer, state->smtp_parser);
+        struct parser_event * event = smtp_parser_consume(&state->read_buffer, state->smtp_parser, state->state);
         switch(event->type) {
             case HELO_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
@@ -475,6 +493,7 @@ static unsigned client_read(struct selector_key * key) {
                     ret = SERVER_ALREADY_GREETED;
                     break;
                 }
+                strcpy(state->stm.currentUser,state->state->user);
                 ret = SERVER_HELLO;
                 break;
             case EHLO_CMP_EQ:
@@ -489,6 +508,7 @@ static unsigned client_read(struct selector_key * key) {
                     ret = SERVER_ALREADY_GREETED;
                     break;
                 }
+                strcpy(state->stm.currentUser,state->state->user);
                 ret = SERVER_EHLO;
                 break;
             case MAIL_FROM_CMP_EQ:
@@ -590,13 +610,13 @@ static unsigned client_read_data(struct selector_key * key) {
         state->read_buffer.data[r] = 0;
         puts((char*)state->read_buffer.read);
         buffer_write_adv(&state->read_buffer, r);
-        struct parser_event * event = smtp_data_parser_consume(&state->read_buffer, state->smtp_data_parser);
+        struct parser_event * event = smtp_data_parser_consume(&state->read_buffer, state->smtp_data_parser, state->state, &transferred_bytes);
         if (event->type == CLIENT_DATA_CMP_EQ) {
             selector_set_interest_key(key, OP_WRITE);
             buffer_reset(&state->read_buffer);
             parser_reset(state->smtp_parser);
             parser_reset(state->smtp_data_parser);
-            sendMail();
+            sendMail(state->state);
             ret = SERVER_MAIL_END;
         }
     } else {
@@ -703,6 +723,7 @@ static unsigned server_error(struct selector_key *key) {
     return server_template(key, ERROR, "%d - An error has occured. Sorry!\n", status_local_error_in_processing, CLIENT_MAIL_FROM);
 }
 static unsigned server_quit(struct selector_key *key) {
+    current_connections--;
     return server_template(key, QUIT, "%d - Bye bye!\n", status_service_closing, CLOSE);
 }
 

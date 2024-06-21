@@ -3,7 +3,9 @@
 
 #include "parser_utils.h"
 #include "buffer.h"
+#include "smtp.h"
 #define MAX_STATES 524
+#define MAX_RCPT_TO 500
 
 enum smtp_req_cmd {
   EHLO_CMD = 0x01,
@@ -155,11 +157,10 @@ enum state_names {
   EQ = 91,
 };
 
-struct parser * smtp_parser_init(void);
-struct parser * smtp_data_parser_init(void);
-void sendMail(void);
-char * getCurrentUser(void);
+struct parser * smtp_parser_init(client_state * state);
+struct parser * smtp_data_parser_init(client_state * state);
+void sendMail(client_state * state);
 const struct parser_event * smtp_parser_feed(struct parser * p, const uint8_t c);
-const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p);
-const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p);
+const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p, client_state * state);
+const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parser * p, client_state * state, size_t * data_size);
 #endif

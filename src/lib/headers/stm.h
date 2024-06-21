@@ -33,6 +33,7 @@ struct state_machine {
     /** estado actual */
     const struct state_definition *current;
     const struct state_definition *previous;
+    const char currentUser[1024];
 };
 
 typedef struct selector_key *key;
