@@ -14,8 +14,7 @@ int bufferWritten = 0;
 
 pthread_mutex_t logger_mutex;
 
-//TODO esto tiene dos vulnerabilidades, si escribis un string de mas de 512 caracteres tiene la chance de pisar memoria
-//TODO la otra vulnerabilidad es el pasaje de argumentos, log_data("%s, %s", "hola") va a levantar memoria invalida
+//TODO si escribis un string de mas de 512 caracteres tiene la chance de pisar memoria
 
 int init_logger(char *logLocation) {
     log_out = fopen(logLocation, "a");
@@ -46,8 +45,30 @@ void close_logger(void) {
     }
 }
 
+size_t count_format_specifiers(const char *str) {
+    size_t count = 0;
+    while (*str) {
+        if (*str == '%' && *(str + 1) != '%') {
+            count++;
+            str++;
+        }
+        str++;
+    }
+    return count;
+}
+
 int log_data(char *str, ...) {
     if (canWrite != SUCCESS)
+        return ERROR;
+
+    // While not very efficient, this stops invalid memory from being accessed
+    va_list args_aux;
+    va_start(args_aux, str);
+    size_t argc = 0;
+    while (va_arg(args_aux, void*) != NULL) {
+        argc++;
+    }
+    if ((argc - 1) < count_format_specifiers(str))
         return ERROR;
 
     pthread_mutex_lock(&logger_mutex);
