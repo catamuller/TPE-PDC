@@ -18,26 +18,60 @@ parser_utils_strcmpi_event(const enum string_cmp_event_types type) {
         case STRING_CMP_NEQ:
             ret = "neq(c)";
             break;
+        default:
+            ret = "not handled(c)";
+            break;
     }
     return ret;
 }
 
-static void
-may_eq(struct parser_event *ret, const uint8_t c) {
+void may_eq(struct parser_event *ret, const uint8_t c) {
     ret->type    = STRING_CMP_MAYEQ;
     ret->n       = 1;
     ret->data[0] = c;
 }
 
-static void
-eq(struct parser_event *ret, const uint8_t c) {
+void eq(struct parser_event *ret, const uint8_t c) {
     ret->type    = STRING_CMP_EQ;
     ret->n       = 1;
     ret->data[0] = c;
 }
 
-static void
-neq(struct parser_event *ret, const uint8_t c) {
+static void type(enum string_cmp_event_types type, struct parser_event *ret, const uint8_t c) {
+    ret->type    = type;
+    ret->n       = 1;
+    ret->data[0] = c;
+}
+
+void eqHELO(struct parser_event *ret, const uint8_t c) {
+    type(HELO_CMP_EQ, ret, c);
+}
+
+void eqEHLO(struct parser_event *ret, const uint8_t c) {
+    type(EHLO_CMP_EQ, ret, c);
+}
+
+void eqMAILFROM(struct parser_event *ret, const uint8_t c) {
+    type(MAIL_FROM_CMP_EQ, ret, c);
+}
+
+void eqRCPT(struct parser_event *ret, const uint8_t c) {
+    type(RCPT_TO_CMP_EQ, ret, c);
+}
+
+void eqQUIT(struct parser_event *ret, const uint8_t c) {
+    type(QUIT_CMP_EQ, ret, c);
+}
+
+void eqDATA(struct parser_event *ret, const uint8_t c) {
+    type(DATA_CMP_EQ, ret, c);
+}
+
+void neqDomain(struct parser_event *ret, const uint8_t c) {
+    type(NEQ_DOMAIN, ret, c);
+}
+
+void neq(struct parser_event *ret, const uint8_t c) {
     ret->type    = STRING_CMP_NEQ;
     ret->n       = 1;
     ret->data[0] = c;

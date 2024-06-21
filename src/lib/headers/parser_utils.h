@@ -15,15 +15,38 @@ enum string_cmp_event_types {
     STRING_CMP_EQ,
     /** NO hay posibilidades de que el string sea igual */
     STRING_CMP_NEQ,
+
+    HELO_CMP_EQ,
+    EHLO_CMP_EQ,
+    MAIL_FROM_CMP_EQ,
+    RCPT_TO_CMP_EQ,
+    DATA_CMP_EQ,
+    QUIT_CMP_EQ,
+    NEQ_DOMAIN
 };
 
-static void may_eq(struct parser_event *ret, const uint8_t c);
+void may_eq(struct parser_event *ret, const uint8_t c);
 
 
-static void eq(struct parser_event *ret, const uint8_t c);
+void eq(struct parser_event *ret, const uint8_t c);
 
-static void neq(struct parser_event *ret, const uint8_t c);
+static void type(enum string_cmp_event_types type, struct parser_event *ret, const uint8_t c);
 
+void eqHELO(struct parser_event *ret, const uint8_t c);
+
+void eqEHLO(struct parser_event *ret, const uint8_t c);
+
+void eqMAILFROM(struct parser_event *ret, const uint8_t c);
+
+void eqRCPT(struct parser_event *ret, const uint8_t c);
+
+void eqQUIT(struct parser_event *ret, const uint8_t c);
+
+void eqDATA(struct parser_event *ret, const uint8_t c);
+
+void neq(struct parser_event *ret, const uint8_t c);
+
+void neqDomain(struct parser_event *ret, const uint8_t c);
 const char *
 parser_utils_strcmpi_event(const enum string_cmp_event_types type);
 
