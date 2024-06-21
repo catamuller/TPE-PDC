@@ -75,10 +75,10 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
             { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "h:l:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hl:P:u:v", long_options, &option_index);
+
         if (c == -1)
             break;
-
         switch (c) {
             case 'h':
                 usage(argv[0]);
