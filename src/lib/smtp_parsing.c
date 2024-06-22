@@ -713,6 +713,7 @@ struct parser * smtp_parser_init(client_state* state) {
   if (domainFile != NULL) {
     domain[fread(domain, sizeof(char), BUFFER_MAX_SIZE, domainFile)] = '\0';
   }
+  fclose(domainFile);
   int i = MAX_STATES - 100;
   for(int j = 0;domain[j];j++, i++) {
     domain_states[j] = calloc(2, sizeof(struct parser_state_transition));
@@ -837,7 +838,7 @@ const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parse
         state->mailFromIndex = 0;
     }
 
-    //*data_size++;
+    (*data_size)++;
 
     if (c == CR) {
       CRflag = true;
@@ -869,56 +870,55 @@ const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parse
   return e1;
 }
 
-void computeLPSArray(char *pat, int M, int *lps) {
-    int len = 0; 
-    int i;
- 
-    lps[0] = 0;
-    i = 1;
- 
-    while (i < M) {
-        if (pat[i] == pat[len]) {
-            len++;
-            lps[i] = len;
-            i++;
-        } else {
-            if (len != 0) {
-                len = lps[len - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
+void nextComputation(char *query, int *next) {
+    int len = strlen(query);
+
+    int border=0;  // Length of the current border
+
+    int rec=1;
+    while(rec < len){
+        if(query[rec]!=query[border]){
+            if(border!=0)
+                border=next[border-1];
+            else
+                next[rec++]=0;
+        }
+        else{
+            border++;
+            next[rec]=border;
+            rec++;
         }
     }
 }
  
-int KMPSearch(char *pat, char *txt) {
-    int M = strlen(pat);
-    int N = strlen(txt);
- 
-    int *lps = (int *) malloc(sizeof(int) * M);
-    int j = 0; 
+int KMPSearch(char *query, char *target) {
 
-    computeLPSArray(pat, M, lps);
- 
-    int i = 0;
-    while (i < N) {
-        if (pat[j] == txt[i]) {
-            j++;
-            i++;
+    int qlen = strlen(query);
+    int tlen = strlen(target);
+    int *next = (int *) malloc(sizeof(int) * qlen);
+
+    nextComputation(query, next);
+    int pquery=0, rec=0;
+    while(rec<tlen && pquery<qlen){
+        if(target[rec] == query[pquery]){
+            rec++;
+            pquery++;
         }
-        if (j == M) {
-            return i-j;
-            //j = lps[j - 1];
-        } else if (i < N && pat[j] != txt[i]) {
-            if (j != 0)
-                j = lps[j - 1];
-            else
-                i = i + 1;
+        else {
+            if (pquery==0){
+                rec++;
+            }
+            else {
+                pquery = next[pquery-1];
+            }
         }
     }
-    free(lps);
+    if (pquery == qlen){
+        return rec-pquery;
+    }
+
     return -1;
+
 }
 
 
