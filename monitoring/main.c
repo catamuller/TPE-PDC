@@ -4,6 +4,9 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "lib/headers/config.h"
 #include "lib/headers/connections_metrics_handler.h"
@@ -86,8 +89,35 @@ int main(int argc, char *argv[]) {
     size_t cmd_size = 256;
     char command[cmd_size];
 
-    snprintf(command, cmd_size,
-             "sudo ./scripts/monitor.sh %s %s", SERVER_IP, SERVER_PORT);
+    FILE * server_check;
+
+    snprintf(command, cmd_size, "sudo ./scripts/server_check.sh %s %s", SERVER_IP, SERVER_PORT);
+    printf("%s\n", command);
+
+    server_check = popen(command, "r");
+
+    if (server_check == NULL) {
+        perror("Failed to run script\n");
+        goto finish;
+    }
+
+    char buff[16] = {'\0'};
+
+    fgets(buff, 15, server_check);
+
+    size_t len = strlen(buff);
+    if (len > 0 && buff[len - 1] == '\n') {
+        buff[len - 1] = '\0';
+    }
+
+    if (strcmp(buff, "true") != 0) {
+        perror("SMTP Server can't be reached\n");
+        goto finish;
+    }
+
+    pclose(server_check);
+
+    snprintf(command, cmd_size,"sudo ./scripts/monitor.sh %s %s", SERVER_IP, SERVER_PORT);
 
     stream = popen(command, "r");
 

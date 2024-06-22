@@ -21,22 +21,14 @@ static Connections active_connections[MAX_ACTIVE_CONNECTIONS];
 static size_t historic_connections_idx = 0;
 static Connections historic_connections[MAX_GLOBAL_CONNECTIONS];
 
-Map * historic_connections_map;
 
 int init_metrics(void) {
-    historic_connections_map = mapInit(MAX_GLOBAL_CONNECTIONS);
-    if (historic_connections_map == NULL) {
-        return 1;
-    }
     return 0;
 }
 
 void close_metrics(void){
     dump_active_connections();
     dump_historic_connections();
-    if (historic_connections_map != NULL) {
-        mapFree(historic_connections_map);
-    }
 }
 
 int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
