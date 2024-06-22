@@ -32,8 +32,11 @@ $(SMTPD_CLI): $(SMTPD_OBJS)
 concurrency_test: test/concurrency_test.o
 	$(CC) $(CFLAGS) -lcheck -o $@ $^
 
-test: concurrency_test
-	./concurrency_test
+simultaneous_test: test/simultaneous_test.o
+	$(CC) $(CFLAGS) -lcheck -o $@ $^
+
+test: simultaneous_test
+	./simultaneous_test
 
 clean:
-	- rm -rf $(SMTPD_CLI) $(SMTPD_OBJS) concurrency_test test/concurrency_test.o
+	- rm -rf $(SMTPD_CLI) $(SMTPD_OBJS) concurrency_test test/concurrency_test.o simultaneous_test test/simultaneous_test.o
