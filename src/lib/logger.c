@@ -19,9 +19,6 @@ struct tm* tm_info;
 int init_logger(char *logLocation) {
     log_out = fopen(logLocation, "a");
     canWrite = (log_out == NULL) ? ERROR : SUCCESS;
-    if (canWrite == SUCCESS) {
-        timer = time(NULL);
-    }
     return canWrite;
 }
 
@@ -84,6 +81,7 @@ int log_data(char *str, ...) {
         dump_logger_buffer();
 
     char buffer[32];
+    timer = time(NULL);
     tm_info = localtime(&timer);
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S : ", tm_info);
 

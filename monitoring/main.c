@@ -17,14 +17,6 @@ FILE * stream = NULL;
 
 static bool done = false;
 
-static void check_connections(void) {
-    char command[256];
-    snprintf(command, sizeof(command),
-             "netstat -anp | grep :%s | grep ESTABLISHED | awk '{ if ($5 != \"%s:%s\") print $5 }'",
-             SERVER_PORT, SERVER_IP, SERVER_PORT);
-    stream = popen(command, "r");
-}
-
 static void close_connection(void) {
     if (stream != NULL) {
         pclose(stream);
@@ -76,7 +68,14 @@ void process_ips(void) {
 }
 
 void display_metrics(void) {
-    printf("\rACTIVE CONNECTIONS: %d, HISTORIC CONNECTIONS: %d", get_active_connections(), get_historic_connections());
+
+    printf("\033[2J\033[H");
+
+    printf("Connections\n");
+    printf("------------------------------------------------------------------------\n");
+    printf("Active Connections: %-30dHistoric Connections: %-30d\n", get_active_connections(), get_historic_connections());
+    printf("------------------------------------------------------------------------\n");
+
     fflush(stdout);
 
     sleep(1);
@@ -84,15 +83,21 @@ void display_metrics(void) {
 
 int main(int argc, char *argv[]) {
 
-    if(init_metrics() == 1) {
-        perror("Failed to initialize metrics\n");
-        goto finish;
-    }
+    size_t cmd_size = 256;
+    char command[cmd_size];
 
-    stream = popen("sudo ./scripts/monitor.sh 127.0.0.1 2525", "r");
+    snprintf(command, cmd_size,
+             "sudo ./scripts/monitor.sh %s %s", SERVER_IP, SERVER_PORT);
+
+    stream = popen(command, "r");
 
     if (stream == NULL) {
         perror("Failed to run script\n");
+        goto finish;
+    }
+
+    if(init_metrics() == 1) {
+        perror("Failed to initialize metrics\n");
         goto finish;
     }
 
@@ -107,6 +112,8 @@ int main(int argc, char *argv[]) {
     finish:
 
     close_metrics();
-    pclose(stream);
+    if(stream != NULL) {
+        pclose(stream);
+    }
     return 0;
 }

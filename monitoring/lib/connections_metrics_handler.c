@@ -5,7 +5,7 @@
 
 #include "headers/config.h"
 #include "headers/connections_metrics_handler.h"
-#include "headers/map.h"
+#include "headers/historic_map.h"
 
 typedef struct IPV4Connection {
     unsigned net1;
@@ -57,19 +57,19 @@ int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsig
 }
 
 int add_to_historic_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
+
     if(historic_connections_idx >= MAX_GLOBAL_CONNECTIONS) {
         return 1;
     }
-    char ip[16];
 
-    snprintf(ip, 16,"%d.%d.%d.%d:%d", net1, net2, net3, host, port);
-    if (mapGet(historic_connections_map, ip).type != 0) {
+    if (entry_exists(net1, net2, net3, host, port)) {
         return 0;
     }
-    MapValue aux = {1, ""};
-    if (mapPut(historic_connections_map, ip, aux) == false) {
+
+    if (insert_entry(net1, net2, net3, host, port) == 1) {
         return 1;
     }
+
     historic_connections[historic_connections_idx].net1 = net1;
     historic_connections[historic_connections_idx].net2 = net2;
     historic_connections[historic_connections_idx].net3 = net3;
@@ -77,6 +77,7 @@ int add_to_historic_connections(unsigned net1, unsigned net2, unsigned net3, uns
     historic_connections[historic_connections_idx].port = port;
 
     historic_connections_idx++;
+
     return 0;
 }
 
