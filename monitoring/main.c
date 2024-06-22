@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "lib/headers/config.h"
-#include "lib/headers/metrics_handler.h"
+#include "lib/headers/connections_metrics_handler.h"
 
 #define BUFFER_SIZE 1024
 
@@ -55,54 +55,58 @@ static int save_response(char * response) {
     return 0;
 }
 
-void process_output(const char *output) {
-    char *token;
-    char separator[] = "|";
-    char *saveptr;
+void process_ips(void) {
+    size_t out_size = 1024;
+    char out[out_size];
+    reset_active_connections();
 
-    token = strtok_r(output, separator, &saveptr);
-    while (token != NULL) {
-        if (strcmp(token, "END_BATCH") == 0) {
-            // Process end of batch
-            printf("End of batch\n");
+    while (fgets(out, out_size - 1, stream) != NULL) {
+
+        char * section = strtok(out, "\n");
+
+        if (strcmp(section, "END_BATCH") == 0) {
+            break;
         } else {
-            // Process connection info
-            printf("Connection: %s\n", token);
+            int net1N, net2N, net3N, hostN, portN;
+            sscanf(section, "%d.%d.%d.%d:%d", &net1N, &net2N, &net3N, &hostN, &portN);
+            add_to_active_connections(net1N, net2N, net3N, hostN, portN);
+            add_to_historic_connections(net1N, net2N, net3N, hostN, portN);
         }
-        token = strtok_r(NULL, separator, &saveptr);
     }
 }
 
-int main(int argc, char *argv[]) {
-    FILE *fp;
-    char out[1024];
+void display_metrics(void) {
+    printf("\rACTIVE CONNECTIONS: %d, HISTORIC CONNECTIONS: %d", get_active_connections(), get_historic_connections());
+    fflush(stdout);
 
-    fp = popen("sudo ./scripts/monitor.sh 127.0.0.1 2525", "r");
-    if (fp == NULL) {
-        printf("Failed to run script\n");
-        exit(1);
+    sleep(1);
+}
+
+int main(int argc, char *argv[]) {
+
+    if(init_metrics() == 1) {
+        perror("Failed to initialize metrics\n");
+        goto finish;
+    }
+
+    stream = popen("sudo ./scripts/monitor.sh 127.0.0.1 2525", "r");
+
+    if (stream == NULL) {
+        perror("Failed to run script\n");
+        goto finish;
     }
 
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
     while(!done) {
-        while (fgets(out, 1023, fp) != NULL) {
-
-            char * section = strtok(out, "\n");
-
-            if (strcmp(section, "END_BATCH") == 0) {
-                dump_active_connections();
-                reset_active_connections();
-            } else {
-                int net1N, net2N, net3N, hostN, portN;
-                sscanf(section, "%d.%d.%d.%d:%d", &net1N, &net2N, &net3N, &hostN, &portN);
-                add_to_active_connections(net1N, net2N, net3N, hostN, portN);
-            }
-        }
+        process_ips();
+        display_metrics();
     }
 
+    finish:
+
     close_metrics();
-    pclose(fp);
+    pclose(stream);
     return 0;
 }
