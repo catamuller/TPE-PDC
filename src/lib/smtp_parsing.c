@@ -837,7 +837,7 @@ const struct parser_event * smtp_data_parser_consume(buffer * buff, struct parse
         state->mailFromIndex = 0;
     }
 
-    //*data_size++;
+    (*data_size)++;
 
     if (c == CR) {
       CRflag = true;

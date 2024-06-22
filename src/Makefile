@@ -29,11 +29,11 @@ logger.o: lib/headers/logger.h
 $(SMTPD_CLI): $(SMTPD_OBJS)
 	$(CC) $(CFLAGS) $(SMTPD_OBJS) -o $(SMTPD_CLI)
 
-request_test: request_test.o request.o buffer.o
+concurrency_test: test/concurrency_test.o
 	$(CC) $(CFLAGS) -lcheck -o $@ $^
 
-test: request_test
-	./request_test
+test: concurrency_test
+	./concurrency_test
 
 clean:
-	- rm -rf $(SMTPD_CLI) $(SMTPD_OBJS)
+	- rm -rf $(SMTPD_CLI) $(SMTPD_OBJS) concurrency_test test/concurrency_test.o

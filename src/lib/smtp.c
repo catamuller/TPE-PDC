@@ -415,10 +415,9 @@ void smtp_passive_accept(struct selector_key * key) {
     state->stm.max_state = CLOSE;
 
     char portstr[6] = {0};
-    getnameinfo((struct sockaddr*)&client_addr, sizeof(struct sockaddr_storage), state->stm.currentUser, sizeof(state->stm.currentUser), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
+    getnameinfo((struct sockaddr*)&client_addr, sizeof(struct sockaddr_storage), state->stm.currentUser, sizeof(state->stm.currentUser), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV); // error visual
     strcat(state->stm.currentUser, ":");
     strcat(state->stm.currentUser, portstr);
-
     stm_init(&state->stm);
     
     // TODO: creo que esto hay que volarlo mas adelante
@@ -617,6 +616,7 @@ static unsigned client_read_data(struct selector_key * key) {
             parser_reset(state->smtp_parser);
             parser_reset(state->smtp_data_parser);
             sendMail(state->state);
+            total_mails_sent++;
             ret = SERVER_MAIL_END;
         }
     } else {
