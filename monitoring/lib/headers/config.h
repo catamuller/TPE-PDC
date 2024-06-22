@@ -1,0 +1,10 @@
+#ifndef TPE_PDC_CONFIG_H
+#define TPE_PDC_CONFIG_H
+
+#define SERVER_IP "127.0.0.1"
+#define SERVER_PORT "2525"
+
+#define MAX_ACTIVE_CONNECTIONS 600
+
+
+#endif //TPE_PDC_CONFIG_H
