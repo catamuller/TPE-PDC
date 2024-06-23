@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "headers/config.h"
 
-void display_metrics(char* server_status, int active_connections, int historic_connections) {
+void display_metrics(char* server_status, double ms_delay, int active_connections, int historic_connections) {
 
     system("clear");
 
@@ -13,6 +13,7 @@ void display_metrics(char* server_status, int active_connections, int historic_c
     printf("------------------------------------------------------------------------\n");
     printf("\n");
     printf("SERVER STATUS: %s\n", server_status);
+    printf("DELAY: %.3fms\n", ms_delay);
     printf("BYTES TRANSFERRED: %d\n", 0);
     printf("\n");
     printf("------------------------------------------------------------------------\n");

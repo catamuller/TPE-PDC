@@ -14,4 +14,6 @@ void check_server_status(void);
 
 char* get_server_status(void);
 
+double get_ms_delay(void);
+
 #endif //TPE_PDC_CONNECTIONS_SERVER_HANDLER_H

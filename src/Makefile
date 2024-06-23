@@ -33,7 +33,7 @@ concurrency_test: test/concurrency_test.o
 	$(CC) $(CFLAGS) -lcheck -o $@ $^
 
 simultaneous_test: test/simultaneous_test.o
-	$(CC) $(CFLAGS) -lcheck -o $@ $^
+	$(CC) $(CFLAGS)  -o $@ $^
 
 test: simultaneous_test
 	./simultaneous_test

@@ -90,7 +90,8 @@ int main(int argc, char *argv[]) {
     while(!done) {
         process_ips();
         check_server_status();
-        display_metrics(get_server_status(), get_active_connections(), get_historic_connections());
+        display_metrics(get_server_status(), get_ms_delay(),
+                        get_active_connections(), get_historic_connections());
         sleep(1);
     }
 

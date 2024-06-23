@@ -1,7 +1,6 @@
 #include <stdlib.h>
-#include <stdio.h>
+#include <time.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
 
@@ -25,6 +24,8 @@
 int server_status = OFF;
 
 static int server_socket = -1;
+
+double ms_delay = 0.0;
 
 
 static int create_connection_socket(void){
@@ -109,13 +110,24 @@ int send_request(char* msg, char* buff, size_t buff_size) {
 void check_server_status(void) {
     size_t buff_size = 256;
     char buff[buff_size];
+
+    clock_t start_time = clock();
+
     if (send_request(CHECK_MSG, buff, buff_size) == 1) {
         server_status = OFF;
     } else {
         server_status = ON;
     }
+
+    clock_t end_time = clock();
+
+    ms_delay = ((double)(end_time - start_time) * 1000) / CLOCKS_PER_SEC;
 }
 
 char* get_server_status(void) {
     return server_status == ON ? REACHABLE : UNREACHABLE;
+}
+
+double get_ms_delay(void) {
+    return ms_delay;
 }
