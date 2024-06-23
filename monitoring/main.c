@@ -76,7 +76,7 @@ void display_metrics(void) {
 
     printf("Connections\n");
     printf("------------------------------------------------------------------------\n");
-    printf("Active Connections: %-30dHistoric Connections: %-30d\n", get_active_connections(), get_historic_connections());
+    printf("Active: %-30dHistoric: %-30d\n", get_active_connections(), get_historic_connections());
     printf("------------------------------------------------------------------------\n");
 
     fflush(stdout);
@@ -84,42 +84,71 @@ void display_metrics(void) {
     sleep(1);
 }
 
+int create_connection_socket(void){
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sock == -1) {
+        return -1;
+    }
+
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+
+    int port = atoi(SERVER_PORT);
+
+    if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) == -1) {
+        close(sock);
+        return -1;
+    }
+    serv_addr.sin_port = htons(port);
+    serv_addr.sin_family = AF_INET;
+
+    printf("Connecting to %s:%d\n", SERVER_IP, port);
+    if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
+        close(sock);
+        return -1;
+    }
+
+    return sock;
+
+}
+
 int main(int argc, char *argv[]) {
 
-    size_t cmd_size = 256;
-    char command[cmd_size];
+    size_t buff_size = 256;
+    char buff[buff_size];
 
-    FILE * server_check;
+    printf("Creating Socket\n");
+    int socket = create_connection_socket();
 
-    snprintf(command, cmd_size, "sudo ./scripts/server_check.sh %s %s", SERVER_IP, SERVER_PORT);
-    printf("%s\n", command);
-
-    server_check = popen(command, "r");
-
-    if (server_check == NULL) {
-        perror("Failed to run script\n");
+    if (socket == -1) {
+        perror("Failed to connect to server\n");
         goto finish;
     }
 
-    char buff[16] = {'\0'};
+    printf("Sending message\n");
 
-    fgets(buff, 15, server_check);
-
-    size_t len = strlen(buff);
-    if (len > 0 && buff[len - 1] == '\n') {
-        buff[len - 1] = '\0';
-    }
-
-    if (strcmp(buff, "true") != 0) {
-        perror("SMTP Server can't be reached\n");
+    if (send(socket, "EHLO metrics_client\r\n.\r\n", 21, 0) < 0) {
+        perror("Send failed");
         goto finish;
     }
 
-    pclose(server_check);
 
-    snprintf(command, cmd_size,"sudo ./scripts/monitor.sh %s %s", SERVER_IP, SERVER_PORT);
+    int bytes_received = recv(socket, buff, buff_size - 1, 0);
 
-    stream = popen(command, "r");
+    if (bytes_received <= 0) {
+        perror("Failed to authenticate to server\n");
+        goto finish;
+    }
+
+    buff[bytes_received] = '\0';
+
+    printf("Server connection successful. Continuing\n");
+
+    snprintf(buff, buff_size,"sudo ./scripts/connections_monitor.sh %s %s", SERVER_IP, SERVER_PORT);
+
+    stream = popen(buff, "r");
 
     if (stream == NULL) {
         perror("Failed to run script\n");
@@ -145,5 +174,6 @@ int main(int argc, char *argv[]) {
     if(stream != NULL) {
         pclose(stream);
     }
+    close(socket);
     return 0;
 }

@@ -21,14 +21,23 @@ static Connections active_connections[MAX_ACTIVE_CONNECTIONS];
 static size_t historic_connections_idx = 0;
 static Connections historic_connections[MAX_GLOBAL_CONNECTIONS];
 
+FILE * ip_dump;
+
+bool can_write = false;
 
 int init_metrics(void) {
+    ip_dump = fopen("ip_logs.txt", "w");
+    if (ip_dump == NULL) {
+        return 1;
+    }
+    can_write = true;
     return 0;
 }
 
 void close_metrics(void){
     dump_active_connections();
     dump_historic_connections();
+    fclose(ip_dump);
 }
 
 int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
@@ -78,18 +87,24 @@ void reset_active_connections(void) {
 }
 
 void dump_active_connections(void) {
-    printf("Active Connections:\n");
+    if (!can_write) {
+        return;
+    }
+    fprintf(ip_dump, "Active Connections:\n");
     for (size_t i = 0; i < active_connections_idx; i++) {
-        printf("%d.%d.%d.%d:%d\n", active_connections[i].net1,
+        fprintf(ip_dump, "%d.%d.%d.%d:%d\n", active_connections[i].net1,
                active_connections[i].net2, active_connections[i].net3,
                active_connections[i].host, active_connections[i].port);
     }
 }
 
 void dump_historic_connections(void) {
-    printf("Historic Connections:\n");
+    if (!can_write) {
+        return;
+    }
+    fprintf(ip_dump, "Historic Connections:\n");
     for (size_t i = 0; i < historic_connections_idx; i++) {
-        printf("%d.%d.%d.%d:%d\n", historic_connections[i].net1,
+        fprintf(ip_dump, "%d.%d.%d.%d:%d\n", historic_connections[i].net1,
                historic_connections[i].net2, historic_connections[i].net3,
                historic_connections[i].host, historic_connections[i].port);
     }
