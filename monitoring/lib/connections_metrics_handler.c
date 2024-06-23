@@ -21,7 +21,7 @@ static Connections active_connections[MAX_ACTIVE_CONNECTIONS];
 static size_t historic_connections_idx = 0;
 static Connections historic_connections[MAX_GLOBAL_CONNECTIONS];
 
-FILE * ip_dump;
+FILE * ip_dump = NULL;
 
 bool can_write = false;
 
@@ -37,7 +37,9 @@ int init_metrics(void) {
 void close_metrics(void){
     dump_active_connections();
     dump_historic_connections();
-    fclose(ip_dump);
+    if (ip_dump != NULL) {
+        fclose(ip_dump);
+    }
 }
 
 int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {

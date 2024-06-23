@@ -7,3 +7,5 @@ cmake-build-debug
 smtpd
 logs
 mail_dir/
+monitoring/ip_logs.txt
+monitoring/metrics

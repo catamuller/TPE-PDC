@@ -69,7 +69,6 @@ int main(int argc, char *argv[]) {
         perror("Failed to connect to server\n");
         goto finish;
     }
-    printf("a");
 
     snprintf(buff, buff_size,"sudo ./scripts/connections_monitor.sh %s %s", SERVER_IP, SERVER_PORT);
 

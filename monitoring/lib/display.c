@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "headers/config.h"
 
 void display_metrics(char* server_status, int active_connections, int historic_connections) {
 
-    printf("\033[2J\033[H");
+    system("clear");
 
     printf("------------------------------------------------------------------------\n");
     printf("------------------------------------------------------------------------\n");
@@ -12,6 +13,7 @@ void display_metrics(char* server_status, int active_connections, int historic_c
     printf("------------------------------------------------------------------------\n");
     printf("\n");
     printf("SERVER STATUS: %s\n", server_status);
+    printf("BYTES TRANSFERRED: %d\n", 0);
     printf("\n");
     printf("------------------------------------------------------------------------\n");
     printf("\n");
