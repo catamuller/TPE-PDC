@@ -20,7 +20,7 @@ unsigned int hash_function(unsigned int key) {
 int insert_entry(unsigned int net1, unsigned int net2, unsigned int net3, unsigned int host, unsigned int port) {
     unsigned int index = hash_function(net1 + net2 + net3 + host + port);
 
-    if (filled_slots >= MAX_GLOBAL_CONNECTIONS) {
+    if (filled_slots >= MAX_TOTAL_CONNECTIONS) {
         return 1;
     }
 

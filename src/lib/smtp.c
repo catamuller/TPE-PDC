@@ -31,8 +31,8 @@ size_t transferred_bytes = 0;
 size_t total_mails_sent = 0;
 
 static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
-                             "SERVER_EHLO", "CLIENT_STAT_ACTIVE_CONNECTIONS", "SERVER_STAT_ACTIVE_CONNECTIONS",
-                             "CLIENT_STAT_HISTORIC_CONNECTIONS", "SERVER_STAT_HISTORIC_CONNECTIONS",
+                             "SERVER_EHLO", "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
+                             "CLIENT_STAT_TOTAL_CONNECTIONS", "SERVER_STAT_TOTAL_CONNECTIONS",
                              "CLIENT_STAT_BYTES_TRANSFERED","SERVER_STAT_BYTES_TRANSFERED", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
                              "SERVER_MAIL_FROM", "SERVER_WRONG_DOMAIN", "SERVER_NO_RCPT", "CLIENT_RCPT_TO", "SERVER_RCPT_TO",
                              "CLIENT_DATA", "SERVER_DATA", "CLIENT_MAIL_CONTENT", "SERVER_MAIL_END", "SERVER_WRONG_ARGUMENTS",
@@ -137,25 +137,25 @@ static const struct state_definition client_statbl[] = {
         .on_write_ready   = server_ehlo,
     },
     {
-        .state            = CLIENT_STAT_ACTIVE_CONNECTIONS,
+        .state            = CLIENT_STAT_CURRENT_CONNECTIONS,
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
-        .state            = SERVER_STAT_ACTIVE_CONNECTIONS,
+        .state            = SERVER_STAT_CURRENT_CONNECTIONS,
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_write_ready   = server_stat_active_connections
     },
     {
-        .state            = CLIENT_STAT_HISTORIC_CONNECTIONS,
+        .state            = CLIENT_STAT_TOTAL_CONNECTIONS,
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_read_ready    = client_read,
     },
     {
-        .state            = SERVER_STAT_HISTORIC_CONNECTIONS,
+        .state            = SERVER_STAT_TOTAL_CONNECTIONS,
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_write_ready   = server_stat_historic_connections
@@ -416,7 +416,7 @@ static unsigned client_read(struct selector_key * key) {
                     ret = SERVER_WRONG_ARGUMENTS;
                     break;
                 }
-                ret = SERVER_STAT_ACTIVE_CONNECTIONS;
+                ret = SERVER_STAT_CURRENT_CONNECTIONS;
                 break;
             case TOTAL_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
@@ -430,7 +430,7 @@ static unsigned client_read(struct selector_key * key) {
                     ret = SERVER_WRONG_ARGUMENTS;
                     break;
                 }
-                ret = SERVER_STAT_HISTORIC_CONNECTIONS;
+                ret = SERVER_STAT_TOTAL_CONNECTIONS;
                 break;
             case BYTES_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
@@ -645,11 +645,11 @@ static unsigned server_ehlo(struct selector_key * key) {
 }
 
 static unsigned server_stat_active_connections(struct selector_key *key) {
-    return stat_template(key, SERVER_STAT_ACTIVE_CONNECTIONS, current_connections, CLIENT_MAIL_FROM);
+    return stat_template(key, SERVER_STAT_CURRENT_CONNECTIONS, current_connections, CLIENT_MAIL_FROM);
 }
 
 static unsigned server_stat_historic_connections(struct selector_key *key) {
-    return stat_template(key, SERVER_STAT_HISTORIC_CONNECTIONS, total_connections, CLIENT_MAIL_FROM);
+    return stat_template(key, SERVER_STAT_TOTAL_CONNECTIONS, total_connections, CLIENT_MAIL_FROM);
 
 }
 

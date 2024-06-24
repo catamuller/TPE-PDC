@@ -16,10 +16,10 @@ typedef struct IPV4Connection {
 }Connections;
 
 static size_t active_connections_idx = 0;
-static Connections active_connections[MAX_ACTIVE_CONNECTIONS];
+static Connections active_connections[MAX_CURRENT_CONNECTIONS];
 
 static size_t historic_connections_idx = 0;
-static Connections historic_connections[MAX_GLOBAL_CONNECTIONS];
+static Connections historic_connections[MAX_TOTAL_CONNECTIONS];
 
 FILE * ip_dump = NULL;
 
@@ -35,16 +35,16 @@ int init_metrics(void) {
 }
 
 void close_metrics(void){
-    dump_active_connections();
-    dump_historic_connections();
+    dump_current_connections();
+    dump_total_connections();
     if (ip_dump != NULL) {
         fclose(ip_dump);
     }
 }
 
-int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
+int add_to_current_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
 
-    if(active_connections_idx >= MAX_ACTIVE_CONNECTIONS) {
+    if(active_connections_idx >= MAX_CURRENT_CONNECTIONS) {
         return 1;
     }
 
@@ -59,9 +59,9 @@ int add_to_active_connections(unsigned net1, unsigned net2, unsigned net3, unsig
     return 0;
 }
 
-int add_to_historic_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
+int add_to_total_connections(unsigned net1, unsigned net2, unsigned net3, unsigned host, unsigned port) {
 
-    if(historic_connections_idx >= MAX_GLOBAL_CONNECTIONS) {
+    if(historic_connections_idx >= MAX_TOTAL_CONNECTIONS) {
         return 1;
     }
 
@@ -84,11 +84,11 @@ int add_to_historic_connections(unsigned net1, unsigned net2, unsigned net3, uns
     return 0;
 }
 
-void reset_active_connections(void) {
+void reset_current_connections(void) {
     active_connections_idx = 0;
 }
 
-void dump_active_connections(void) {
+void dump_current_connections(void) {
     if (!can_write) {
         return;
     }
@@ -100,7 +100,7 @@ void dump_active_connections(void) {
     }
 }
 
-void dump_historic_connections(void) {
+void dump_total_connections(void) {
     if (!can_write) {
         return;
     }
@@ -112,10 +112,10 @@ void dump_historic_connections(void) {
     }
 }
 
-int get_active_connections(void) {
+int get_current_connections(void) {
     return active_connections_idx;
 }
 
-int get_historic_connections(void) {
+int get_total_connections(void) {
     return historic_connections_idx;
 }

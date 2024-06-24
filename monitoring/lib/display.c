@@ -7,7 +7,7 @@ void display_metrics(struct metricsargs * args, char* server_status, double ms_d
 
     system("clear");
 
-    if (args->show_netstat) {
+    if (args->show_version) {
         printf("------------------------------------------------------------------------\n");
         printf("------------------------------------------------------------------------\n");
         printf("%s\n", VERSION);
@@ -24,13 +24,13 @@ void display_metrics(struct metricsargs * args, char* server_status, double ms_d
     if (args->show_netstat) {
         printf("Netstat Connections\n");
         printf("------------------------------------------------------------------------\n");
-        printf("Active: %-30dHistoric: %-30d\n", active_connections, historic_connections);
+        printf("Current: %-30dTotal: %-30d\n", active_connections, historic_connections);
         printf("------------------------------------------------------------------------\n");
         printf("\n");
     }
     printf("Verified Connections\n");
     printf("------------------------------------------------------------------------\n");
-    printf("Active: %-30dHistoric: %-30d\n", server_current_connections, server_total_connections);
+    printf("Current: %-30dTotal: %-30d\n", server_current_connections, server_total_connections);
 
 
 

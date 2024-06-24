@@ -50,7 +50,7 @@ void process_ips(void) {
 
     size_t out_size = 1024;
     char out[out_size];
-    reset_active_connections();
+    reset_current_connections();
 
     while (fgets(out, out_size - 1, stream) != NULL) {
 
@@ -61,8 +61,8 @@ void process_ips(void) {
         } else {
             int net1N, net2N, net3N, hostN, portN;
             sscanf(section, "%d.%d.%d.%d:%d", &net1N, &net2N, &net3N, &hostN, &portN);
-            add_to_active_connections(net1N, net2N, net3N, hostN, portN);
-            add_to_historic_connections(net1N, net2N, net3N, hostN, portN);
+            add_to_current_connections(net1N, net2N, net3N, hostN, portN);
+            add_to_total_connections(net1N, net2N, net3N, hostN, portN);
         }
     }
 }
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
         check_server_status();
         retrieve_server_stats();
         display_metrics(args, get_server_status(), get_ms_delay(),
-                        get_active_connections(), get_historic_connections(),
+                        get_current_connections(), get_total_connections(),
                         get_server_current_connections(), get_server_total_connections(),
                         get_server_transferred_bytes());
         sleep(1);
