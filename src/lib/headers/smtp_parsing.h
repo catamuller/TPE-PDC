@@ -193,6 +193,9 @@ enum state_names {
   NOOP_CR_STATE = 94,
   NOOP_LF_STATE = 95,
 
+  RSET_CR_STATE = 96,
+  RSET_LF_STATE = 97,
+
   EQ = 99,
 };
 

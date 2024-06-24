@@ -237,7 +237,8 @@ static const struct parser_state_transition ST_21[] = {
 };
 
 static const struct parser_state_transition ST_22[] = {
-  /* TODO: define what to do when client writes RSET*/
+
+  {.when = '\r', .dest = RSET_CR_STATE, .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -713,6 +714,17 @@ static const struct parser_state_transition ST_95[] = {
   {.when = ANY,     .dest = NOOP_LF_STATE,          .act1 = eqNOOP}
 };
 
+static const struct parser_state_transition ST_96[] = {
+  {.when = '\n',     .dest = RSET_LF_STATE,  .act1 = eqRSET},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_97[] = {
+
+  {.when = ANY,     .dest = RSET_LF_STATE,  .act1 = eqRSET}
+};
+
 static const struct parser_state_transition DT_0[] = {
   {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
   {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
@@ -838,7 +850,9 @@ size_t states_amount[MAX_STATES] = {
     N(ST_92),
     N(ST_93),
     N(ST_94),
-    N(ST_95)
+    N(ST_95),
+    N(ST_96),
+    N(ST_97)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -937,7 +951,9 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_92,
     ST_93,
     ST_94,
-    ST_95
+    ST_95,
+    ST_96,
+    ST_97
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {

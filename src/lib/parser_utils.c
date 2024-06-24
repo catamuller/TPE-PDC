@@ -88,6 +88,10 @@ void eqBYTES(struct parser_event *ret, const uint8_t c) {
     type(BYTES_CMP_EQ, ret, c);
 }
 
+void eqRSET(struct parser_event *ret, const uint8_t c) {
+    type(RSET_CMP_EQ, ret, c);
+}
+
 void eqNOOP(struct parser_event *ret, const uint8_t c) {
     type(NOOP_CMP_EQ, ret, c);
 }
