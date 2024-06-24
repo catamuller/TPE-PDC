@@ -30,155 +30,10 @@ size_t current_connections = 0;
 size_t transferred_bytes = 0;
 size_t total_mails_sent = 0;
 
-/** maquina de estados general */
-enum smtp_state {
-    /**
-     * recibe el mensaje `HELLO` del cliente, y lo procesa
-     *
-     * Intereses:
-     *     - OP_READ sobre client_fd
-     *
-     * Transiciones:
-     *   - CLIENT_HELLO  mientras el mensaje no esté completo
-     *   - SERVER_HELLO  cuando está completo
-     *   - ERROR         ante cualquier error (IO/parseo)
-     *   - QUIT
-     */
-    CLIENT_HELLO,
-
-    /**
-     * envía la respuesta del `HELLO` al cliente.
-     *
-     * Intereses:
-     *     - OP_WRITE sobre client_fd
-     *
-     * Transiciones:
-     *   - SERVER_HELLO          mientras queden bytes por enviar
-     *   - CLIENT_MAIL_FROM      cuando se enviaron todos los bytes -> acá falta autenticación antes de esta transición
-     *   - ERROR                 ante cualquier error (IO/parseo)
-     */
-   SERVER_NO_GREETING,
-   SERVER_HELLO,
-   SERVER_EHLO,
-   SERVER_ALREADY_GREETED,
-
-    /**
-     * recibe el mensaje `MAIL FROM` del cliente, y lo procesa
-     * 
-     * Intereses:
-     *      - OP_READ sobre client_fd
-     * 
-     * Transiciones:
-     *    - CLIENT_MAIL_FROM mientras el mensaje no esté completo
-     *    - SERVER_MAIL_FROM cuando esté completo
-     *    - ERROR            ante cualquier error (IO/parseo)
-     *    - QUIT
-     */
-   SERVER_NO_MAIL,
-   CLIENT_MAIL_FROM,
-   SERVER_ALREADY_MAIL,
-
-    /**
-     * envía la respuesta del `MAIL FROM` al cliente.
-     * 
-     * Intereses:
-     *      - OP_WRITE sobre client_fd
-     * 
-     * Transiciones:
-     *   - SERVER_MAIL_FROM mientras queden bytes por enviar
-     *   - CLIENT_RCPT_TO   cuando se enviaron todos los bytes
-     *   - ERROR            ante cualquier error (IO/parseo)
-     */
-   SERVER_MAIL_FROM,
-   SERVER_WRONG_DOMAIN,
-
-    /**
-     * recibe el mensaje de `RCPT TO` del cliente, y lo procesa
-     * 
-     * Intereses:
-     *      - OP_READ sobre client_fd
-     * 
-     * Transiciones:
-     *   - CLIENT_RCPT_TO mientras el mensaje no esté completo
-     *   - SERVER_RCPT_TO cuando esté completo
-     *   - ERROR          ante cualquier error (IO/parseo)
-     *   - QUIT
-     */
-   SERVER_NO_RCPT,
-   CLIENT_RCPT_TO,
-
-    /**
-     * envía la respuesta del `RCPT TO` al cliente.
-     * 
-     * Intereses:
-     *      - OP_WRITE sobre client_fd
-     * 
-     * Transiciones:
-     *   - SERVER_RCPT_TO mientras queden bytes por enviar
-     *   - CLIENT_DATA    cuando se enviaron todos los bytes
-     *   - ERROR          ante cualquier error (IO/parseo)
-     */
-   SERVER_RCPT_TO,
-
-    /**
-     * recibe el mensaje de `DATA` del cliente
-     * 
-     * Intereses:
-     *      - OP_READ sobre client_fd
-     * 
-     * Transiciones:
-     *   - SERVER_DATA siempre
-     *   - ERROR       ante cualquier error (IO/parseo)
-     */
-   CLIENT_DATA,
-
-    /**
-     * envía la respuesta del `DATA` al cliente
-     * 
-     * Intereses:
-     *      - OP_WRITE sobre client_fd
-     * 
-     * Transiciones:
-     *   - SERVER_DATA         mientras queden bytes por enviar
-     *   - CLIENT_MAIL_CONTENT cuando se enviaron todos los bytes
-     *   - ERROR               ante cualquier error (IO/parseo)
-     */
-   SERVER_DATA,
-   
-    /**
-     * recibe el contenido del mail por parte del cliente (menos <CR><LF>.<CR><LF>)
-     * 
-     * Intereses:
-     *      - OP_READ sobre client_fd
-     * 
-     * Transiciones:
-     *   - CLIENT_MAIL_CONTENT si el contenido no contiene un `<CR><LF>.<CR><LF>`
-     *   - SERVER_MAIL_END     si el contenido final es un `<CR><LF>.<CR><LF>`
-     *   - ERROR               ante cualquier error (IO/parseo)
-     */
-   CLIENT_MAIL_CONTENT,
-
-    /**
-     * envía la respuesta de `queued` del contenido del MAIL.
-     * 
-     * Intereses:
-     *      - OP_WRITE sobre client_fd
-     * 
-     * Transiciones:
-     *   - CLIENT_MAIL_FROM siempre
-     *   - ERROR            ante cualquier error (IO/parseo)
-     */
-   SERVER_MAIL_END,
-
-    // estados terminales
-   SERVER_WRONG_ARGUMENTS,
-   ERROR,
-   QUIT,    // todo: cierra todo
-   CLOSE
-};
-
 static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
-                             "SERVER_EHLO", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
+                             "SERVER_EHLO", "CLIENT_STAT_ACTIVE_CONNECTIONS", "SERVER_STAT_ACTIVE_CONNECTIONS",
+                             "CLIENT_STAT_HISTORIC_CONNECTIONS", "SERVER_STAT_HISTORIC_CONNECTIONS",
+                             "CLIENT_STAT_BYTES_TRANSFERED","SERVER_STAT_BYTES_TRANSFERED", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
                              "SERVER_MAIL_FROM", "SERVER_WRONG_DOMAIN", "SERVER_NO_RCPT", "CLIENT_RCPT_TO", "SERVER_RCPT_TO",
                              "CLIENT_DATA", "SERVER_DATA", "CLIENT_MAIL_CONTENT", "SERVER_MAIL_END", "SERVER_WRONG_ARGUMENTS",
                              "ERROR", "QUIT", "CLOSE"};
@@ -234,6 +89,9 @@ static void smtp_destroy(struct smtp * smtp) {
   free(smtp);
 }
 
+static unsigned server_stat_active_connections(struct selector_key *key);
+static unsigned server_stat_historic_connections(struct selector_key *key);
+static unsigned server_stat_bytes_transfered(struct selector_key *key);
 static unsigned client_read(struct selector_key * key);
 static unsigned server_no_greeting(struct selector_key * key);
 static unsigned server_hello(struct selector_key * key);
@@ -277,6 +135,42 @@ static const struct state_definition client_statbl[] = {
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_write_ready   = server_ehlo,
+    },
+    {
+        .state            = CLIENT_STAT_ACTIVE_CONNECTIONS,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_read_ready    = client_read,
+    },
+    {
+        .state            = SERVER_STAT_ACTIVE_CONNECTIONS,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_stat_active_connections
+    },
+    {
+        .state            = CLIENT_STAT_HISTORIC_CONNECTIONS,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_read_ready    = client_read,
+    },
+    {
+        .state            = SERVER_STAT_HISTORIC_CONNECTIONS,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_stat_historic_connections
+    },
+    {
+        .state            = CLIENT_STAT_BYTES_TRANSFERED,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_read_ready    = client_read,
+    },
+    {
+        .state            = SERVER_STAT_BYTES_TRANSFERED,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_stat_bytes_transfered
     },
     {
         .state            = SERVER_ALREADY_GREETED,
@@ -348,7 +242,7 @@ static const struct state_definition client_statbl[] = {
         .state            = CLIENT_MAIL_CONTENT,
         .on_arrival       = NULL,
         .on_departure     = NULL,
-        .on_read_ready    = client_read_data         // TODO - cambiar por otra función que acepte <CR><LF>.<CR><LF>!!
+        .on_read_ready    = client_read_data       
     },
     {
         .state            = SERVER_MAIL_END,
@@ -510,6 +404,48 @@ static unsigned client_read(struct selector_key * key) {
                 strcpy(state->stm.currentUser,state->state->user);
                 ret = SERVER_EHLO;
                 break;
+            case CURRENT_CMP_EQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                if (state->stm.current->state < CLIENT_MAIL_FROM) {
+                    ret = SERVER_NO_GREETING;
+                    break;
+                }
+                if (state->stm.current->state > CLIENT_MAIL_FROM) {
+                    ret = SERVER_WRONG_ARGUMENTS;
+                    break;
+                }
+                ret = SERVER_STAT_ACTIVE_CONNECTIONS;
+                break;
+            case TOTAL_CMP_EQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                if (state->stm.current->state < CLIENT_MAIL_FROM) {
+                    ret = SERVER_NO_GREETING;
+                    break;
+                }
+                if (state->stm.current->state > CLIENT_MAIL_FROM) {
+                    ret = SERVER_WRONG_ARGUMENTS;
+                    break;
+                }
+                ret = SERVER_STAT_HISTORIC_CONNECTIONS;
+                break;
+            case BYTES_CMP_EQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                if (state->stm.current->state < CLIENT_MAIL_FROM) {
+                    ret = SERVER_NO_GREETING;
+                    break;
+                }
+                if (state->stm.current->state > CLIENT_MAIL_FROM) {
+                    ret = SERVER_WRONG_ARGUMENTS;
+                    break;
+                }
+                ret = SERVER_STAT_BYTES_TRANSFERED;
+                break;
             case MAIL_FROM_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
@@ -622,6 +558,7 @@ static unsigned client_read_data(struct selector_key * key) {
     } else {
         ret = ERROR;
     }
+    state->state->currentState = ret;
     return ret;
 }
 
@@ -639,6 +576,33 @@ static unsigned server_template(struct selector_key * key, int returnValue, cons
     //strcpy((char*)b->write, buffer);
     if(n >= 0) {
         //buffer_read_adv(b, n);
+        if(!buffer_can_read(b)) {
+            if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+                if (success < GOTO_PREVIOUS)
+                    ret = success;
+                else
+                    ret = ATTACHMENT(key)->stm.previous->state;
+            } else {
+                ret = ERROR;
+            }
+        }
+        buffer_reset(b);
+    } else {
+        ret = ERROR;
+    }
+    ATTACHMENT(key)->state->currentState = ret;
+    return ret;
+} 
+
+static unsigned stat_template(struct selector_key * key, int returnState, size_t toReturn, int success) {
+    unsigned ret = returnState;
+
+    buffer *b = &ATTACHMENT(key)->write_buffer;
+
+    char buffer[BUFFER_MAX_SIZE];
+    sprintf(buffer,"%ld\n", toReturn);
+    ssize_t n = send(key->fd, buffer, strlen(buffer), MSG_NOSIGNAL);
+    if(n >= 0) {
         if(!buffer_can_read(b)) {
             if(SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
                 if (success < GOTO_PREVIOUS)
@@ -678,6 +642,19 @@ static unsigned server_ehlo(struct selector_key * key) {
     status_action_okay,
     CLIENT_MAIL_FROM
     );
+}
+
+static unsigned server_stat_active_connections(struct selector_key *key) {
+    return stat_template(key, SERVER_STAT_ACTIVE_CONNECTIONS, current_connections, CLIENT_MAIL_FROM);
+}
+
+static unsigned server_stat_historic_connections(struct selector_key *key) {
+    return stat_template(key, SERVER_STAT_HISTORIC_CONNECTIONS, total_connections, CLIENT_MAIL_FROM);
+
+}
+
+static unsigned server_stat_bytes_transfered(struct selector_key *key) {
+    return stat_template(key, SERVER_STAT_BYTES_TRANSFERED, transferred_bytes, CLIENT_MAIL_FROM);
 }
 
 static unsigned server_already_greeted(struct selector_key * key) {

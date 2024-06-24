@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "headers/smtp.h"
+#include "headers/logger.h"
+
 #define CR '\r'
 #define LF '\n'
 #define BUFFER_MAX_SIZE 1024
@@ -83,6 +85,9 @@ static const struct parser_state_transition ST_0[] = {
 
   {.when = 'V',     .dest = VRFY_V,      .act1 = may_eq},
   {.when = 'v',     .dest = VRFY_V,      .act1 = may_eq},
+
+  {.when = 'S',     .dest = STAT_S,      .act1 = may_eq},
+  {.when = 's',     .dest = STAT_S,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -509,6 +514,195 @@ static const struct parser_state_transition ST_65[] = {
   {.when = ANY,     .dest = PARSER_RESET_LF_STATE,         .act1 = eqPARSERRST} // TODO: save data with act2
 };
 
+static const struct parser_state_transition ST_66[] = {
+  {.when = 'T',     .dest = STAT_T,       .act1 = may_eq},
+  {.when = 't',     .dest = STAT_T,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_67[] = {
+  {.when = 'A',     .dest = STAT_A,       .act1 = may_eq},
+  {.when = 'a',     .dest = STAT_A,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_68[] = {
+  {.when = 'T',     .dest = STAT_SECOND_T,       .act1 = may_eq},
+  {.when = 't',     .dest = STAT_SECOND_T,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_69[] = {
+  {.when = ' ',     .dest = STAT_SPACE,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_70[] = {
+  {.when = 'C',     .dest = CURRENT_C,       .act1 = may_eq},
+  {.when = 'c',     .dest = CURRENT_C,       .act1 = may_eq},
+
+  {.when = 'T',     .dest = TOTAL_T,       .act1 = may_eq},
+  {.when = 't',     .dest = TOTAL_T,       .act1 = may_eq},
+
+  {.when = 'B',     .dest = BYTES_B,       .act1 = may_eq},
+  {.when = 'b',     .dest = BYTES_B,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_71[] = {
+  {.when = 'U',     .dest = CURRENT_U,       .act1 = may_eq},
+  {.when = 'u',     .dest = CURRENT_U,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_72[] = {
+  {.when = 'R',     .dest = CURRENT_R,       .act1 = may_eq},
+  {.when = 'r',     .dest = CURRENT_R,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_73[] = {
+  {.when = 'R',     .dest = CURRENT_SECOND_R,       .act1 = may_eq},
+  {.when = 'r',     .dest = CURRENT_SECOND_R,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_74[] = {
+  {.when = 'E',     .dest = CURRENT_E,       .act1 = may_eq},
+  {.when = 'e',     .dest = CURRENT_E,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_75[] = {
+  {.when = 'N',     .dest = CURRENT_N,       .act1 = may_eq},
+  {.when = 'n',     .dest = CURRENT_N,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_76[] = {
+  {.when = 'T',     .dest = CURRENT_T,       .act1 = may_eq},
+  {.when = 't',     .dest = CURRENT_T,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_77[] = {
+  {.when = '\r',     .dest = CURRENT_CR_STATE,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_78[] = {
+  {.when = 'O',     .dest = TOTAL_O,       .act1 = may_eq},
+  {.when = 'o',     .dest = TOTAL_O,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_79[] = {
+  {.when = 'T',     .dest = TOTAL_SECOND_T,       .act1 = may_eq},
+  {.when = 't',     .dest = TOTAL_SECOND_T,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_80[] = {
+  {.when = 'A',     .dest = TOTAL_A,       .act1 = may_eq},
+  {.when = 'a',     .dest = TOTAL_A,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_81[] = {
+  {.when = 'L',     .dest = TOTAL_L,       .act1 = may_eq},
+  {.when = 'l',     .dest = TOTAL_L,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_82[] = {
+  {.when = '\r',     .dest = TOTAL_CR_STATE,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_83[] = {
+  {.when = 'Y',     .dest = BYTES_Y,       .act1 = may_eq},
+  {.when = 'y',     .dest = BYTES_Y,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_84[] = {
+  {.when = 'T',     .dest = BYTES_T,       .act1 = may_eq},
+  {.when = 't',     .dest = BYTES_T,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_85[] = {
+  {.when = 'E',     .dest = BYTES_E,       .act1 = may_eq},
+  {.when = 'e',     .dest = BYTES_E,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_86[] = {
+  {.when = 'S',     .dest = BYTES_S,       .act1 = may_eq},
+  {.when = 's',     .dest = BYTES_S,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_87[] = {
+  {.when = '\r',     .dest = BYTES_CR_STATE,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_88[] = {
+  {.when = '\n',     .dest = CURRENT_LF_STATE,       .act1 = eqCURRENT}, 
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq} 
+};
+
+static const struct parser_state_transition ST_89[] = {
+
+  {.when = ANY,     .dest = CURRENT_LF_STATE,          .act1 = eqCURRENT} 
+};
+
+static const struct parser_state_transition ST_90[] = {
+  {.when = '\n',     .dest = TOTAL_LF_STATE,       .act1 = eqTOTAL}, 
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_91[] = {
+
+  {.when = ANY,     .dest = TOTAL_LF_STATE,          .act1 = eqTOTAL}
+};
+
+static const struct parser_state_transition ST_92[] = {
+  {.when = '\n',     .dest = BYTES_LF_STATE,       .act1 = eqBYTES}, 
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_93[] = {
+
+  {.when = ANY,     .dest = BYTES_LF_STATE,          .act1 = eqBYTES}
+};
+
 static const struct parser_state_transition DT_0[] = {
   {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
   {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
@@ -604,7 +798,35 @@ size_t states_amount[MAX_STATES] = {
     N(ST_62),
     N(ST_63),
     N(ST_64),
-    N(ST_65)
+    N(ST_65),
+    N(ST_66),
+    N(ST_67),
+    N(ST_68),
+    N(ST_69),
+    N(ST_70),
+    N(ST_71),
+    N(ST_72),
+    N(ST_73),
+    N(ST_74),
+    N(ST_75),
+    N(ST_76),
+    N(ST_77),
+    N(ST_78),
+    N(ST_79),
+    N(ST_80),
+    N(ST_81),
+    N(ST_82),
+    N(ST_83),
+    N(ST_84),
+    N(ST_85),
+    N(ST_86),
+    N(ST_87),
+    N(ST_88),
+    N(ST_89),
+    N(ST_90),
+    N(ST_91),
+    N(ST_92),
+    N(ST_93)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -673,7 +895,35 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_62,
     ST_63,
     ST_64,
-    ST_65
+    ST_65,
+    ST_66,
+    ST_67,
+    ST_68,
+    ST_69,
+    ST_70,
+    ST_71,
+    ST_72,
+    ST_73,
+    ST_74,
+    ST_75,
+    ST_76,
+    ST_77,
+    ST_78,
+    ST_79,
+    ST_80,
+    ST_81,
+    ST_82,
+    ST_83,
+    ST_84,
+    ST_85,
+    ST_86,
+    ST_87,
+    ST_88,
+    ST_89,
+    ST_90,
+    ST_91,
+    ST_92,
+    ST_93
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {
@@ -790,10 +1040,14 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
       case MAIL_FROM_CMP_EQ:
         state->mailFrom[state->mailFromIndex]='\0';
         //mailFrom[mailFromIndex] = '\0';
+        if (state->currentState <= SERVER_MAIL_FROM)
+          state->clientRcptToIndex = 0;
+        state->rcptToIndex = 0;
         state->mailFromIndex = 0;
         break;
       case STRING_CMP_NEQ:
-        state->clientRcptToIndex = 0;
+        if (state->currentState <= SERVER_MAIL_FROM)
+          state->clientRcptToIndex = 0;
         //rcptToIndex = 0;
         state->rcptToIndex = 0;
         state->mailFromIndex = 0;
@@ -807,6 +1061,7 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
         state->user[state->userIndex++] = e1->data[0];
         //user[userIndex++] = e1->data[0];
         break;
+      default: break;
     }
 
     if (CRflag && c == LF)
@@ -956,9 +1211,14 @@ void sendMail(client_state * state) {
     parseRcptTo(state->rcptTo, i,state);
     char dirname[4*BUFFER_MAX_SIZE] = "mail_dir/";
     char * dirnameWithName = strcat(dirname, state->shortRcptTo[i]);
-    if (stat(dirname, &st) == -1)
-      if (mkdir(dirname, 0700) == -1)  // if directory does not exist
+    if (stat(dirname, &st) == -1) {
+      if (mkdir(dirname, 0700) == -1) {// if directory does not exist
+        log_data("Could not create mail directory for %s. Already exists.", dirname);
         continue;     
+      }
+    }
+      log_data("Created the mail directory for %s.", dirname);
+    
     dirnameWithName = strcat(dirnameWithName, "/");
     srand(time(NULL));
     _randomID(state->randomId);
@@ -966,8 +1226,13 @@ void sendMail(client_state * state) {
     mailPlusSubject = strcat(mailPlusSubject, "_");
     char * subjectPlusRandomId = strcat(mailPlusSubject, state->randomId);
     FILE * mail = fopen(subjectPlusRandomId, "wa");
-    if (mail == NULL)
+    if (mail == NULL) {
+      log_data("Could not create the mail file for %s.", dirname);
       continue;
+    }
+      log_data("Created the mail file for %s.", dirname);
+    
+
     char buffer[4*BUFFER_MAX_SIZE] = {0};
     for(size_t k=0; k<state->rcptToTotal;k++) {
       strcat(buffer, "RCPT TO: ");

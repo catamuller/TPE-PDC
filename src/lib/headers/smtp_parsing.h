@@ -154,7 +154,43 @@ enum state_names {
 
   PARSER_RESET_CR_STATE = 64,
   PARSER_RESET_LF_STATE = 65,
-  EQ = 91,
+
+  STAT_S = 66,
+  STAT_T = 67,
+  STAT_A = 68,
+  STAT_SECOND_T = 69,
+  STAT_SPACE = 70,
+
+  CURRENT_C = 71,
+  CURRENT_U = 72,
+  CURRENT_R = 73,
+  CURRENT_SECOND_R = 74,
+  CURRENT_E = 75,
+  CURRENT_N = 76,
+  CURRENT_T = 77,
+
+  TOTAL_T = 78,
+  TOTAL_O = 79,
+  TOTAL_SECOND_T = 80,
+  TOTAL_A = 81,
+  TOTAL_L = 82,
+
+  BYTES_B = 83,
+  BYTES_Y = 84,
+  BYTES_T = 85,
+  BYTES_E = 86,
+  BYTES_S = 87,
+
+  CURRENT_CR_STATE = 88,
+  CURRENT_LF_STATE = 89,
+
+  TOTAL_CR_STATE = 90,
+  TOTAL_LF_STATE = 91,
+
+  BYTES_CR_STATE = 92,
+  BYTES_LF_STATE = 93,
+
+  EQ = 99,
 };
 
 struct parser * smtp_parser_init(client_state * state);

@@ -75,6 +75,19 @@ void eqCLIENTDATA(struct parser_event *ret, const uint8_t c) {
     type(CLIENT_DATA_CMP_EQ, ret, c);
 }
 
+void eqCURRENT(struct parser_event *ret, const uint8_t c) {
+    type(CURRENT_CMP_EQ, ret, c);
+
+}
+
+void eqTOTAL(struct parser_event *ret, const uint8_t c) {
+    type(TOTAL_CMP_EQ, ret, c);
+}
+
+void eqBYTES(struct parser_event *ret, const uint8_t c) {
+    type(BYTES_CMP_EQ, ret, c);
+}
+
 void neqDomain(struct parser_event *ret, const uint8_t c) {
     type(NEQ_DOMAIN, ret, c);
 }
