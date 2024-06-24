@@ -14,10 +14,10 @@ static void usage(const char *progname) {
             "Usage: %s [OPTION]...\n"
             "\n"
             "   -h               Imprime la ayuda y termina.\n"
-            "   -l <addr>        Dirección donde servirá el servidor SMTP.\n"
-            "   -P <conf port>   Puerto entrante conexiones configuracion\n"
-            "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
-            "   -v               Imprime información sobre la versión y termina.\n"
+            "   -i <addr>        Define a qué ip el cliente intentará conectarse (Default en config.h).\n"
+            "   -P <port>        Define a que puerto el cliente intentará conectarse (Default en config.h).\n"
+            "   -n               Activa el seguimiento de conexiones con netsat.\n"
+            "   -v               Imprime información sobre la versión en la terminal.\n"
             "\n",
             progname);
     exit(1);
