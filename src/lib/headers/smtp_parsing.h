@@ -190,6 +190,9 @@ enum state_names {
   BYTES_CR_STATE = 92,
   BYTES_LF_STATE = 93,
 
+  NOOP_CR_STATE = 94,
+  NOOP_LF_STATE = 95,
+
   EQ = 99,
 };
 

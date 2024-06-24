@@ -113,9 +113,9 @@ void dump_total_connections(void) {
 }
 
 int get_current_connections(void) {
-    return active_connections_idx;
+    return (int)active_connections_idx;
 }
 
 int get_total_connections(void) {
-    return historic_connections_idx;
+    return (int)historic_connections_idx;
 }

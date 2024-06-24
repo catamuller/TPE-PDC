@@ -29,6 +29,7 @@ enum string_cmp_event_types {
     CURRENT_CMP_EQ,
     TOTAL_CMP_EQ,
     BYTES_CMP_EQ,
+    NOOP_CMP_EQ,
     RCPTTOSAVE_CMP_EQ,
     MAILFROMSAVE_CMP_EQ,
     DATASAVE_CMP_EQ
@@ -62,6 +63,8 @@ void eqCURRENT(struct parser_event *ret, const uint8_t c);
 void eqTOTAL(struct parser_event *ret, const uint8_t c);
 
 void eqBYTES(struct parser_event *ret, const uint8_t c);
+
+void eqNOOP(struct parser_event *ret, const uint8_t c);
 
 void USERSave(struct parser_event *ret, const uint8_t c);
 

@@ -11,7 +11,7 @@
 #define CLIENT_NAME "metrics_client"
 #define EHLO_MSG "EHLO " CLIENT_NAME CRLF
 
-#define CHECK_MSG "STAT current" CRLF
+#define CHECK_MSG "NOOP" CRLF
 
 #define TOTAL_MSG "STAT total" CRLF
 #define CURRENT_MSG "STAT current" CRLF
