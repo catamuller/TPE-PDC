@@ -4,27 +4,16 @@
 
 #include <stdbool.h>
 
-#define MAX_USERS 600
+struct metricsargs {
 
-struct user {
-    char *name;
-    char *pass;
-};
+    char * server_addr;
+    char * server_port;
 
-struct metricargs {
-
-    char *          server_addr;
-    unsigned short  server_port;
-
-    bool            disectors_enabled;
+    bool show_netstat;
+    bool show_version;
 
 };
 
-/**
- * Interpreta la linea de comandos (argc, argv) llenando
- * args con defaults o la seleccion humana. Puede cortar
- * la ejecución.
- */
-void parse_args(const int argc, char **argv, struct smtpargs *args);
+void parse_args(const int argc, char **argv, struct metricsargs *args);
 
 #endif //TPE_PDC_ARGS_H

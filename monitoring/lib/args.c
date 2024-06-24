@@ -6,40 +6,8 @@
 #include <getopt.h>
 
 #include "headers/args.h"
+#include "headers/config.h"
 
-static unsigned short port(const char *s) {
-    char *end     = 0;
-    const long sl = strtol(s, &end, 10);
-
-    if (end == s || '\0' != *end
-        || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
-        || sl < 0 || sl > USHRT_MAX) {
-        fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
-        exit(1);
-        return 1;
-    }
-    return (unsigned short)sl;
-}
-
-static void user(char *s, struct user *user) {
-    char *p = strchr(s, ':');
-    if(p == NULL) {
-        fprintf(stderr, "password not found\n");
-        exit(1);
-    } else {
-        *p = 0;
-        p++;
-        user->name = s;
-        user->pass = p;
-    }
-
-}
-
-static void version(void) {
-    fprintf(stderr, "smtpd version 0.0\n"
-                    "ITBA Protocolos de Comunicación 2024/1 -- Grupo 8\n"
-                    "AQUI VA LA LICENCIA\n");
-}
 
 static void usage(const char *progname) {
     fprintf(stderr,
@@ -55,19 +23,16 @@ static void usage(const char *progname) {
     exit(1);
 }
 
-void parse_args(const int argc, char **argv, struct smtpargs *args) {
-    memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
+void parse_args(const int argc, char **argv, struct metricsargs *args) {
+    memset(args, 0, sizeof(*args));
 
-    args->socks_addr = "0.0.0.0";
-    args->socks_port = 2525;
+    args->server_addr   = SERVER_IP;
+    args->server_port   = SERVER_PORT;
 
-    args->mng_addr   = "127.0.0.1";
-    args->mng_port   = 8080;
-
-    args->disectors_enabled = true;
+    args->show_netstat = false;
+    args->show_version = false;
 
     int c;
-    int nusers = 0;
 
     while (true) {
         int option_index = 0;
@@ -75,7 +40,7 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
                 { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "hl:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hi:P:vn", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -83,24 +48,17 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
             case 'h':
                 usage(argv[0]);
                 break;
-            case 'l':
-                args->socks_addr = optarg;
+            case 'i':
+                args->server_addr = optarg;
                 break;
             case 'P':
-                args->mng_port   = port(optarg);
-                break;
-            case 'u':
-                if(nusers >= MAX_USERS) {
-                    fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
-                    exit(1);
-                } else {
-                    user(optarg, args->users + nusers);
-                    nusers++;
-                }
+                args->server_port = optarg;
                 break;
             case 'v':
-                version();
-                exit(0);
+                args->show_version = true;
+                break;
+            case 'n':
+                args->show_netstat = true;
                 break;
             default:
                 fprintf(stderr, "unknown argument %d.\n", c);

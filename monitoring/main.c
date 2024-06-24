@@ -9,6 +9,7 @@
 #include "lib/headers/connections_metrics_handler.h"
 #include "lib/headers/display.h"
 #include "lib/headers/connections_server_handler.h"
+#include "lib/headers/args.h"
 
 #define BUFFER_SIZE 1024
 
@@ -16,6 +17,8 @@ char netstat_response[1024] = {0};
 FILE * stream = NULL;
 
 static bool done = false;
+
+struct metricsargs args_struct;
 
 static int init_stream(void) {
 
@@ -41,6 +44,10 @@ static int save_response(char * response) {
 }
 
 void process_ips(void) {
+    if (!args_struct.show_netstat) {
+        return;
+    }
+
     size_t out_size = 1024;
     char out[out_size];
     reset_active_connections();
@@ -65,23 +72,29 @@ int main(int argc, char *argv[]) {
     size_t buff_size = 256;
     char buff[buff_size];
 
-    if (connect_to_server() == 1) {
+    struct metricsargs * args = &args_struct;
+
+    parse_args(argc, argv, args);
+
+    if (connect_to_server(args->server_addr, args->server_port) == 1) {
         perror("Failed to connect to server\n");
         goto finish;
     }
 
-    snprintf(buff, buff_size,"sudo ./scripts/connections_monitor.sh %s %s", SERVER_IP, SERVER_PORT);
+    if (args->show_netstat) {
+        snprintf(buff, buff_size,"sudo ./scripts/connections_monitor.sh %s %s", args->server_addr, args->server_port);
 
-    stream = popen(buff, "r");
+        stream = popen(buff, "r");
 
-    if (stream == NULL) {
-        perror("Failed to run script\n");
-        goto finish;
-    }
+        if (stream == NULL) {
+            perror("Failed to run script\n");
+            goto finish;
+        }
 
-    if(init_metrics() == 1) {
-        perror("Failed to initialize metrics\n");
-        goto finish;
+        if(init_metrics() == 1) {
+            perror("Failed to initialize metrics\n");
+            goto finish;
+        }
     }
 
     signal(SIGTERM, sigterm_handler);
@@ -90,8 +103,11 @@ int main(int argc, char *argv[]) {
     while(!done) {
         process_ips();
         check_server_status();
-        display_metrics(get_server_status(), get_ms_delay(),
-                        get_active_connections(), get_historic_connections());
+        retrieve_server_stats();
+        display_metrics(args, get_server_status(), get_ms_delay(),
+                        get_active_connections(), get_historic_connections(),
+                        get_server_current_connections(), get_server_total_connections(),
+                        get_server_transferred_bytes());
         sleep(1);
     }
 

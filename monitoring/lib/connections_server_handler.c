@@ -11,9 +11,11 @@
 #define CLIENT_NAME "metrics_client"
 #define EHLO_MSG "EHLO " CLIENT_NAME CRLF
 
-#define MAIL_MSG "MAIL FROM: test@smtpd.com" CRLF
+#define CHECK_MSG "STAT current" CRLF
 
-#define CHECK_MSG "RCPT TO: test" CRLF
+#define TOTAL_MSG "STAT total" CRLF
+#define CURRENT_MSG "STAT current" CRLF
+#define BYTES_MSG "STAT bytes" CRLF
 
 #define ON 1
 #define OFF 0
@@ -27,8 +29,12 @@ static int server_socket = -1;
 
 double ms_delay = 0.0;
 
+int current_connections = 0;
+int total_connections = 0;
+int transferred_bytes = 0;
 
-static int create_connection_socket(void){
+
+static int create_connection_socket(char * ip, char * port){
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -39,13 +45,13 @@ static int create_connection_socket(void){
     struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
 
-    int port = atoi(SERVER_PORT);
+    int port_i = atoi(port);
 
-    if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) == -1) {
+    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) == -1) {
         close(sock);
         return -1;
     }
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(port_i);
     serv_addr.sin_family = AF_INET;
 
     if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
@@ -57,11 +63,11 @@ static int create_connection_socket(void){
 
 }
 
-int connect_to_server(void) {
+int connect_to_server(char * ip, char * port) {
     size_t buff_size = 256;
     char buff[buff_size];
 
-    server_socket = create_connection_socket();
+    server_socket = create_connection_socket(ip, port);
 
     if (server_socket == -1) {
         return 1;
@@ -70,8 +76,6 @@ int connect_to_server(void) {
     if (send_request(EHLO_MSG, buff, buff_size) == 1) {
         return 1;
     }
-
-    send_request(MAIL_MSG, buff, buff_size);
 
     server_status = ON;
 
@@ -130,4 +134,31 @@ char* get_server_status(void) {
 
 double get_ms_delay(void) {
     return ms_delay;
+}
+
+void retrieve_server_stats(void) {
+    size_t buff_size = 256;
+    char buff[buff_size];
+
+    if (send_request(CURRENT_MSG, buff, buff_size) == 0) {
+        current_connections = atoi(buff);
+    }
+    if (send_request(TOTAL_MSG, buff, buff_size) == 0) {
+        total_connections = atoi(buff);
+    }
+    if (send_request(BYTES_MSG, buff, buff_size) == 0) {
+        transferred_bytes = atoi(buff);
+    }
+}
+
+int get_server_current_connections(void) {
+    return current_connections;
+}
+
+int get_server_total_connections(void) {
+    return total_connections;
+}
+
+int get_server_transferred_bytes(void) {
+    return transferred_bytes;
 }
