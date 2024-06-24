@@ -17,6 +17,8 @@
 #define CURRENT_MSG "STAT current" CRLF
 #define BYTES_MSG "STAT bytes" CRLF
 
+#define QUIT_MSG "QUIT" CRLF
+
 #define ON 1
 #define OFF 0
 
@@ -84,6 +86,9 @@ int connect_to_server(char * ip, char * port) {
 
 void close_connection(void) {
     if (server_socket != -1) {
+        size_t buff_size = 256;
+        char buff[buff_size];
+        send_request(QUIT_MSG, buff, buff_size);
         close(server_socket);
     }
 }
