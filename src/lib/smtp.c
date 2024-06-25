@@ -809,7 +809,7 @@ static unsigned stat_template(struct selector_key * key, int returnState, size_t
 } 
 
 static unsigned server_greeting(struct selector_key *key) {
-    return server_template(key, SERVER_GREETING, "%d - Welcome to SMTP8. Type 'help' to see all the commands available\n", status_service_ready, CLIENT_HELLO);
+    return server_template(key, SERVER_GREETING, "%d - Welcome to SMTP8. Type 'help' to see the available commands\n", status_service_ready, CLIENT_HELLO);
 }
 
 static unsigned server_unrecognized_cmd(struct selector_key *key) {
