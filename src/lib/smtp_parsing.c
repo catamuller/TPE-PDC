@@ -444,11 +444,14 @@ static const struct parser_state_transition ST_50[] = {
 
 static const struct parser_state_transition ST_51[] = {
   {.when = ' ',     .dest = FROM_SPACE,  .act1 = may_eq},
+  {.when = '<',     .dest = FROM_SPACE,  .act1 = may_eq},
   {.when = ANY,     .dest = FROM_SPACE,  .act1 = MAILFROMSave} // TODO: save character in string with act2
 };
 
 static const struct parser_state_transition ST_52[] = {
   {.when = '@',     .dest = MAX_STATES-100,      .act1 =  MAILFROMSave},
+  {.when = '<',     .dest = FROM_SPACE,  .act1 = may_eq},
+  {.when = '>',     .dest = FROM_SPACE,  .act1 = may_eq},
   {.when = '\r',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = '\n',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = ANY,     .dest = FROM_SPACE,          .act1 = MAILFROMSave}
@@ -481,6 +484,8 @@ static const struct parser_state_transition ST_56[] = {
 
 static const struct parser_state_transition ST_57[] = {
   {.when = '\r',    .dest = RCPT_TO_CR_STATE, .act1 = may_eq},
+  {.when = '<',     .dest = TO_SPACE,         .act1 = may_eq},
+  {.when = '>',     .dest = TO_SPACE,         .act1 = may_eq},
   {.when = ' ',     .dest = TO_SPACE,              .act1 = may_eq}, // ignore spaces
   {.when = ANY,     .dest = TO_SPACE,   .act1 = RCPTTOSave}
 };
