@@ -39,7 +39,7 @@ static int create_connection_socket(char * ip, char * port){
 int connect_to_server(char * ip, char * port) {
     server_socket = create_connection_socket(ip, port);
     if (server_socket == -1) {
-        return 1;
+        return -1;
     }
 
     return server_socket;
