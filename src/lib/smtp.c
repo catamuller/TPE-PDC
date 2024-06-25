@@ -613,7 +613,7 @@ static unsigned client_read(struct selector_key * key) {
                     ret = SERVER_NO_MAIL;
                     break;
                 }
-                if (allSpacesOrEmpty(state->state->rcptTo[state->state->clientRcptToIndex])) {
+                if (allSpacesOrEmpty(state->state->rcptTo[state->state->clientRcptToIndex-1])) {
                     ret = SERVER_INVALID_RCPT_CMD;
                     break;
                 }
