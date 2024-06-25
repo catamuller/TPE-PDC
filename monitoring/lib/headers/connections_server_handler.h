@@ -24,4 +24,6 @@ int get_server_total_connections(void);
 
 int get_server_transferred_bytes(void);
 
+int get_server_sent_mails(void);
+
 #endif //TPE_PDC_CONNECTIONS_SERVER_HANDLER_H

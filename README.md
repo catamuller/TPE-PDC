@@ -7,7 +7,7 @@ El trabajo consiste en la implementación de un servidor SMTP [RFC 5321](https:/
 Dentro de la carpeta /src se encuentra el archivo fuente del servidor.
 En /config se disponse de los archivos necesarios para compilar el cliente y dentro de /monitoring, los archivos pertenecientes al monitoreo.
 
-El informe del proyecto se encuentra en la carpeta /docs.
+- Para más información, hay un [documento](docs/Informe%20Protocolos%20de%20Comunicación%20Grupo%208.pdf) detallando el proyecto.
 
 ## Ejecución del servidor
 
@@ -24,7 +24,9 @@ Una vez compilado se creará el archivo smtpd dentro de la carpeta /src. Para ej
 ./smtpd
 ```
 
-Luego, ir a la carpeta /config y repetir el comando:
+## Ejecución del cliente de configuración
+
+Ir a la carpeta /config y repetir el comando:
 
 ```
 make clean all
@@ -36,7 +38,9 @@ Se creara el binario client_config que se ejecuta con:
 ./client_config
 ```
 
-Por ultimo se deben repetir los pasos anteriores en la carpeta /monitoring, ejecutando:
+## Ejecución del cliente de métricas
+
+Ir a la carpeta /monitoring, ejecutando:
 
 ```
 make clean all

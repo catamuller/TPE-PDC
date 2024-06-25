@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         retrieve_server_stats();
         display_metrics(args, get_server_status(), get_ms_delay(),
                         get_server_current_connections(), get_server_total_connections(),
-                        get_server_transferred_bytes());
+                        get_server_transferred_bytes(), get_server_sent_mails());
         sleep(1);
     }
 
