@@ -30,7 +30,7 @@ size_t current_connections = 0;
 size_t transferred_bytes = 0;
 size_t total_mails_sent = 0;
 
-static char* state_names[] = {"SERVER_UNRECOGNIZED_CMD", "SERVER_INVALID_MAIL_CMD", "SERVER_INVALID_HELO_CMD", "SERVER_INVALID_EHLO_CMD", "SERVER_INVALID_RCPT_CMD", "SERVER_INVALID_STAT_CMD",
+static char* state_names[] = {"SERVER_GREETING","SERVER_UNRECOGNIZED_CMD", "SERVER_INVALID_MAIL_CMD", "SERVER_INVALID_HELO_CMD", "SERVER_INVALID_EHLO_CMD", "SERVER_INVALID_RCPT_CMD", "SERVER_INVALID_STAT_CMD",
                              "CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
                              "SERVER_EHLO", "CLIENT_RSET", "SEVER_RSET", "CLIENT_NOOP", "SERVER_NOOP", "CLIENT_HELP", "SERVER_HELP", "CLIENT_VRFY", "SERVER_VRFY", "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
                              "CLIENT_STAT_TOTAL_CONNECTIONS", "SERVER_STAT_TOTAL_CONNECTIONS",
@@ -91,6 +91,7 @@ static void smtp_destroy(struct smtp * smtp) {
   free(smtp);
 }
 
+static unsigned server_greeting(struct selector_key *key);
 static unsigned server_stat_active_connections(struct selector_key *key);
 static unsigned server_stat_historic_connections(struct selector_key *key);
 static unsigned server_stat_bytes_transfered(struct selector_key *key);
@@ -125,6 +126,12 @@ static unsigned server_invalid_rcpt_cmd(struct selector_key *key);
 static unsigned server_invalid_stat_cmd(struct selector_key *key);
 
 static const struct state_definition client_statbl[] = {
+    {
+        .state            = SERVER_GREETING,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_greeting
+    },
     {
         .state            = SERVER_UNRECOGNIZED_CMD,
         .on_arrival       = NULL,
@@ -414,7 +421,7 @@ void smtp_passive_accept(struct selector_key * key) {
     buffer_init(&state->read_buffer, N(state->raw_buff_read), state->raw_buff_read);
     buffer_init(&state->write_buffer, N(state->raw_buff_write), state->raw_buff_write);
     state->stm.states = client_statbl;
-    state->stm.initial = CLIENT_HELLO;
+    state->stm.initial = SERVER_GREETING;
     state->stm.max_state = CLOSE;
 
     char portstr[6] = {0};
@@ -433,7 +440,7 @@ void smtp_passive_accept(struct selector_key * key) {
    
     //smtp_request_parser_init(&state->request_parser);
 
-    if(SELECTOR_SUCCESS != selector_register(key->s, client, &smtp_handler, OP_READ, state)) {
+    if(SELECTOR_SUCCESS != selector_register(key->s, client, &smtp_handler, OP_WRITE, state)) {
         goto fail;
     }
     total_connections++;
@@ -800,6 +807,10 @@ static unsigned stat_template(struct selector_key * key, int returnState, size_t
 
     return ret;
 } 
+
+static unsigned server_greeting(struct selector_key *key) {
+    return server_template(key, SERVER_GREETING, "%d - Welcome to SMTP8. Type 'help' to see the available commands\n", status_service_ready, CLIENT_HELLO);
+}
 
 static unsigned server_unrecognized_cmd(struct selector_key *key) {
     return server_template(key, SERVER_UNRECOGNIZED_CMD, "%d - Unrecognized command\n", status_syntax_error_no_command, GOTO_PREVIOUS);
