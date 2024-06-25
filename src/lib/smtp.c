@@ -112,8 +112,15 @@ static unsigned server_wrong_arguments(struct selector_key *key);
 static unsigned server_error(struct selector_key *key);
 static unsigned server_quit(struct selector_key *key);
 static unsigned server_close(struct selector_key *key);
+static unsigned server_unrecognized_cmd(struct selector_key *key);
 
 static const struct state_definition client_statbl[] = {
+    {
+        .state            = SERVER_UNRECOGNIZED_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_unrecognized_cmd
+    },
     {
         .state            = CLIENT_HELLO,
         .on_arrival       = NULL,
@@ -556,6 +563,12 @@ static unsigned client_read(struct selector_key * key) {
                 }
                 ret = SERVER_WRONG_DOMAIN;
                 break;
+            case CMD_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_UNRECOGNIZED_CMD;
+                break;
             case STRING_CMP_NEQ:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
@@ -671,6 +684,10 @@ static unsigned stat_template(struct selector_key * key, int returnState, size_t
 
     return ret;
 } 
+
+static unsigned server_unrecognized_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_UNRECOGNIZED_CMD, "%d - Unrecognized command\n", status_syntax_error_no_command, CLIENT_HELLO);
+}
 
 static unsigned server_no_greeting(struct selector_key * key) {
     return server_template(key, SERVER_NO_GREETING, "%d - Say hi!\n", status_user_not_local, CLIENT_HELLO);

@@ -31,6 +31,7 @@ typedef struct client_state {
 
 /** maquina de estados general */
 enum smtp_state {
+    SERVER_UNRECOGNIZED_CMD,
     /**
      * recibe el mensaje `HELLO` del cliente, y lo procesa
      *

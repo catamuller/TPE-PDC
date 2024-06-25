@@ -197,8 +197,8 @@ enum state_names {
   RSET_LF_STATE = 97,
 
   XSTAT_X = 98,
-
-  EQ = 99,
+  CMD_NEQ = 99,
+  
 };
 
 struct parser * smtp_parser_init(client_state * state);
