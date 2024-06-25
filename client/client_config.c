@@ -3,64 +3,111 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <strings.h>
 #include <string.h>
+#include <netdb.h>
+#include <signal.h>
 #include "headers/args.h"
 #include "../monitoring/lib/headers/connections_server_handler.h"
 #define  BUFF_COMMAND_SIZE 256
+
+char command_buffer[BUFF_COMMAND_SIZE]={0};// se guarda el comando
+int socket_fd;
+
+static void sig_term_handler(){
+    printf("\nExiting command promt\n");
+    close(socket_fd);
+}
+
+static void display_help(){
+    printf(
+        "Commands available:\n\n"
+        "QUIT quits the session.\n"
+        "logging=<(1|0)> enables or disables server logging.\n"
+        );
+}
+
+int parse_promt(char* command_buffer){
+    char* token;
+    const char* delim="=";
+    token=strtok(command_buffer,delim);
+    if(strcasecmp(token,"QUIT\n")==0){
+        printf("Bye Bye\n");
+        return -1;
+    }
+    if(strcasecmp(token,"HELP\n")==0){
+        display_help();
+        return 1;
+    }
+
+    if(token==NULL||strcasecmp(token,"logging")!=0){
+        printf("Invalid command format\n");
+        return 1;
+    }
+    token=strtok(NULL,delim);
+
+    return 0;
+}
 
 
 int main(int argc, char** argv){
 
     struct clientsargs args_struct;
-    char command_buffer[BUFF_COMMAND_SIZE]={0};// se guarda el comando
 
     struct clientsargs * args = &args_struct;
 
     parse_args(argc, argv, args);
 
-    int socket;
-    if ((socket=connect_to_server(args->server_addr, args->server_port)) < 1) {
-        perror("Failed to connect to server\n");
+
+    socket_fd=connect_to_server(args->server_addr,args->server_port);
+    if(socket_fd<0){
+        printf("Error creating socket\n");
         goto final;
     }
 
+    signal(SIGTERM,sig_term_handler);
+    signal(SIGINT,sig_term_handler);
 
-    if(send(socket,command_buffer,BUFF_COMMAND_SIZE,0)==-1){
-        perror("Failed to send command to server");
-        goto final;
-    }
     char server_command[BUFF_COMMAND_SIZE];
-    char* token;
-    const char* delim="=";
 
-
+    printf("\n>");
     while(fgets(command_buffer, BUFF_COMMAND_SIZE, stdin)!=NULL){
-    strncpy(server_command,command_buffer,BUFF_COMMAND_SIZE);
-        token=strtok(command_buffer,delim);
-        if(token==NULL){
-            perror("Invalid command format");
-            continue;
-        }
-        token=strtok(NULL,delim);
-        if(token==NULL){
-            perror("Invalid command format");
-            continue;
-        }
-        send(socket,server_command,strlen(server_command),0);
 
-        ssize_t received=recv(socket,command_buffer,BUFF_COMMAND_SIZE-1,0);
-        if(received<0){
-            perror("Error receiving response");
-            goto final;
-        }
 
-        command_buffer[received]='\0';
-        printf("%s\n",command_buffer);
+    int len=strlen(command_buffer);
+    strncpy(server_command,command_buffer,len-1);
+    server_command[len]='\0';
 
+
+    int parse_result=parse_promt(command_buffer);
+    if(parse_result==-1){
+        goto exit;
+    }
+    else if(parse_result==1){
+        printf("\n>");
+        continue;
+    }
+    if (send(socket_fd,server_command,strlen(server_command),0)<0 ){
+        printf("Failed to send command to server\n");
+        goto connection_error;
     }
 
-    final:
-        close(socket);
-        return 0;
+    ssize_t received=recv(socket_fd,command_buffer,BUFF_COMMAND_SIZE-1,0);
+    if(received<0){
+        printf("Error receiving server response\n");
+        goto connection_error;
+    }
 
+    command_buffer[received]='\0';
+    printf("Server response: %s\n>",command_buffer);
+    }
+
+    exit:
+        close(socket_fd);
+        return 0;
+    connection_error:
+        close(socket_fd);
+    final:
+        return 1;
 }

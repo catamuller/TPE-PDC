@@ -36,6 +36,12 @@ enum string_cmp_event_types {
     RCPTTOSAVE_CMP_EQ,
     MAILFROMSAVE_CMP_EQ,
     DATASAVE_CMP_EQ,
+    VRFY_CMP_EQ,
+    MAIL_CMP_NEQ,
+    HELO_CMP_NEQ,
+    EHLO_CMP_NEQ,
+    RCPT_CMP_NEQ,
+    STAT_CMP_NEQ,
 
     CMD_CMP_NEQ,
 };
@@ -77,6 +83,8 @@ void eqRSET(struct parser_event *ret, const uint8_t c);
 
 void eqHELP(struct parser_event *ret, const uint8_t c);
 
+void eqVRFY(struct parser_event *ret, const uint8_t c);
+
 void USERSave(struct parser_event *ret, const uint8_t c);
 
 void RCPTTOSave(struct parser_event *ret, const uint8_t c);
@@ -87,7 +95,17 @@ void CLIENTDATASave(struct parser_event *ret, const uint8_t c);
 
 void neq(struct parser_event *ret, const uint8_t c);
 
+void neqMAIL(struct parser_event *ret, const uint8_t c);
+
+void neqSTAT(struct parser_event *ret, const uint8_t c);
+
 void neqDomain(struct parser_event *ret, const uint8_t c);
+
+void neqHELO(struct parser_event *ret, const uint8_t c);
+
+void neqEHLO(struct parser_event *ret, const uint8_t c);
+
+void neqRCPT(struct parser_event *ret, const uint8_t c);
 
 void neqCMD(struct parser_event *ret, const uint8_t c);
 const char *

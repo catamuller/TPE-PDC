@@ -13,8 +13,14 @@
 #define ERROR (-1)
 #define BUFF_SIZE 256
 
+#define OK "OK"
+#define ERR "ERR"
+
+#define QUIT_MSG "QUIT"
+
 enum vars {
     LOGGING=0,
+    QUIT=99,
     UNKNOWN=-1
 };
 
@@ -55,13 +61,13 @@ int init_config_socket(char *ip, int port, const char **err_msg) {
 
     if (bind(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
         close(sock);
-        *err_msg = "Bind failed.";
+        *err_msg = "Config bind failed.";
         return -1;
     }
 
     if (listen(sock, SOMAXCONN) == -1) {
         close(sock);
-        *err_msg = "Listen failed.";
+        *err_msg = "Config listen failed.";
         return -1;
     }
 
@@ -74,16 +80,47 @@ static int parse_variable(char *var) {
         return UNKNOWN;
     }
     for(int i=0; variables[i]!=NULL; i++) {
-        if(strcasecmp(var, variables[i]) == 0) {
+        if(strncasecmp(var, variables[i], strlen(variables[i])) == 0) {
             return i;
         }
     }
     return UNKNOWN;
 }
 
+
+static void answer(char* msg, size_t msg_size) {
+    if(socket_addr == -1) {
+        return;
+    }
+    send(socket_addr, msg, msg_size, 0);
+}
+
+static void quit(struct selector_key *key) {
+    answer(OK, sizeof(OK));
+    selector_unregister_fd(key->s, socket_addr);
+    close(socket_addr);
+    socket_addr = -1;
+}
+
 int parse_input(const char *input, int *var, int *val) {
+    if(input == NULL) {
+        return ERROR;
+    }
     char buff[BUFF_SIZE];
     strncpy(buff, input, BUFF_SIZE - 1);
+
+    for(int i=0; buff[i] != '\0'; i++) {
+        if(buff[i] == '\n') {
+            buff[i] = '\0';
+            break;
+        }
+    }
+
+    if(strncasecmp(buff, QUIT_MSG, sizeof(QUIT_MSG)) == 0) {
+        *var = QUIT;
+        return 0;
+    }
+
     char *token = strtok(buff, "=");
 
     if (token == NULL || strlen(token) == strlen(input)) {
@@ -104,12 +141,17 @@ int parse_input(const char *input, int *var, int *val) {
     return 0;
 }
 
-static void set_variable(enum vars variable, int value) {
+static void set_variable(struct selector_key *key, enum vars variable, int value) {
     switch(variable) {
         case LOGGING:
+            answer(OK, sizeof(OK));
             set_logging(value);
             break;
+        case QUIT:
+            quit(key);
+            break;
         default:
+            answer(ERR, sizeof(ERR));
             break;
     }
 }
@@ -118,20 +160,23 @@ void receive_data(struct selector_key *key) {
     if(socket_addr == -1) {
         return;
     }
+
+    memset(read_buff, 0, BUFF_SIZE);
+
     ssize_t bytes = recv(socket_addr, read_buff, BUFF_SIZE, 0);
     if(bytes == 0) {
         if(socket_addr != -1) {
-            selector_unregister_fd(key->s, socket_addr);
-            socket_addr = -1;
+            quit(key);
         }
     }
 
     int variable, value;
-    if(parse_input(read_buff, &variable, &value) == -1) {
+    if(parse_input(read_buff, &variable, &value) == ERROR) {
+        answer(ERR, sizeof(ERR));
         return;
     }
 
-    set_variable(variable, value);
+    set_variable(key, variable, value);
 }
 
 void accept_connection(struct selector_key *key) {
@@ -165,3 +210,13 @@ void accept_connection(struct selector_key *key) {
         close(socket_addr);
     }
 }
+
+void close_config_sockets(void) {
+    if(socket_listen != -1) {
+        close(socket_listen);
+    }
+    if(socket_addr != -1) {
+        close(socket_addr);
+    }
+}
+

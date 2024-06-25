@@ -141,9 +141,7 @@ int main(int argc, char ** argv) {
     selector_destroy(selector);
   selector_close();
   close_sockets(master_sockets);
-  if(config_socket >= 0) {
-      close(config_socket);
-  }
+  close_config_sockets();
   log_data("SMTP Server Shutting Down");
   close_logger();
   return 0;
