@@ -840,14 +840,7 @@ static unsigned server_hello(struct selector_key * key) {
 static unsigned server_ehlo(struct selector_key * key) {
     return server_template(key,
     SERVER_EHLO,
-    "%1$d - MAIL\n"
-    "%1$d - RCPT\n"
-    "%1$d - DATA\n"
-    "%1$d - RSET\n"
-    "%1$d - NOOP\n"
-    "%1$d - QUIT\n"
-    "%1$d - VRFY\n"
-    "%1$d - XSTAT\n",
+    "%1$d - MAIL; RCPT; DATA; RSET; NOOP; QUIT; VRFY; XSTAT\n",
     status_action_okay,
     CLIENT_MAIL_FROM
     );
