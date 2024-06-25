@@ -479,6 +479,7 @@ static const struct parser_state_transition ST_55[] = {
 static const struct parser_state_transition ST_56[] = {
   {.when = '\r',    .dest = NEQ_RCPT,  .act1 = neqRCPT},
   {.when = ' ',     .dest = TO_SPACE,  .act1 = may_eq},
+  {.when = '<',     .dest = TO_SPACE,  .act1 = may_eq},
   {.when = '@',     .dest = NEQ_RCPT,  .act1 = neqRCPT},
   {.when = ANY,     .dest = TO_SPACE,  .act1 = RCPTTOSave} // TODO: save character in string with act2
 };
