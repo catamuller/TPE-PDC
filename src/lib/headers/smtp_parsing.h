@@ -201,7 +201,15 @@ enum state_names {
 
   HELP_P = 100,
   HELP_CR_STATE = 101,
-  HELP_LF_STATE = 102
+  HELP_LF_STATE = 102,
+
+  MAILS_M = 110,
+  MAILS_A = 111,
+  MAILS_I = 112,
+  MAILS_L = 113,
+  MAILS_S = 114,
+  MAILS_CR_STATE = 115,
+  MAILS_LF_STATE = 116
 
 };
 

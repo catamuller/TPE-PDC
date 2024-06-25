@@ -29,6 +29,7 @@ enum string_cmp_event_types {
     CURRENT_CMP_EQ,
     TOTAL_CMP_EQ,
     BYTES_CMP_EQ,
+    MAILS_CMP_EQ,
     RSET_CMP_EQ,
     NOOP_CMP_EQ,
     HELP_CMP_EQ,
@@ -67,6 +68,8 @@ void eqCURRENT(struct parser_event *ret, const uint8_t c);
 void eqTOTAL(struct parser_event *ret, const uint8_t c);
 
 void eqBYTES(struct parser_event *ret, const uint8_t c);
+
+void eqMAILS(struct parser_event *ret, const uint8_t c);
 
 void eqNOOP(struct parser_event *ret, const uint8_t c);
 

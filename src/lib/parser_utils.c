@@ -77,7 +77,6 @@ void eqCLIENTDATA(struct parser_event *ret, const uint8_t c) {
 
 void eqCURRENT(struct parser_event *ret, const uint8_t c) {
     type(CURRENT_CMP_EQ, ret, c);
-
 }
 
 void eqTOTAL(struct parser_event *ret, const uint8_t c) {
@@ -86,6 +85,10 @@ void eqTOTAL(struct parser_event *ret, const uint8_t c) {
 
 void eqBYTES(struct parser_event *ret, const uint8_t c) {
     type(BYTES_CMP_EQ, ret, c);
+}
+
+void eqMAILS(struct parser_event *ret, const uint8_t c) {
+    type(MAILS_CMP_EQ, ret, c);
 }
 
 void eqRSET(struct parser_event *ret, const uint8_t c) {

@@ -554,6 +554,9 @@ static const struct parser_state_transition ST_70[] = {
   {.when = 'B',     .dest = BYTES_B,       .act1 = may_eq},
   {.when = 'b',     .dest = BYTES_B,       .act1 = may_eq},
 
+  {.when = 'M',     .dest = MAILS_M,       .act1 = may_eq},
+  {.when = 'm',     .dest = MAILS_M,       .act1 = may_eq},
+
   {.when = ANY,     .dest = NEQ,          .act1 = neq}
 };
 
@@ -762,6 +765,50 @@ static const struct parser_state_transition ST_102[] = {
 
 };
 
+static const struct parser_state_transition ST_110[] = {
+  {.when = 'A',     .dest = MAILS_A,       .act1 = may_eq},
+  {.when = 'a',     .dest = MAILS_A,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_111[] = {
+  {.when = 'I',     .dest = MAILS_I,       .act1 = may_eq},
+  {.when = 'i',     .dest = MAILS_I,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_112[] = {
+  {.when = 'L',     .dest = MAILS_L,       .act1 = may_eq},
+  {.when = 'l',     .dest = MAILS_L,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_113[] = {
+  {.when = 'S',     .dest = MAILS_S,       .act1 = may_eq},
+  {.when = 's',     .dest = MAILS_S,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_114[] = {
+  {.when = '\r',     .dest = MAILS_CR_STATE,       .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_115[] = {
+  {.when = '\n',     .dest = MAILS_LF_STATE,       .act1 = eqMAILS},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+};
+
+static const struct parser_state_transition ST_116[] = {
+  {.when = ANY,     .dest = MAILS_LF_STATE,          .act1 = eqMAILS}
+};
+
 static const struct parser_state_transition DT_0[] = {
   {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
   {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
@@ -894,7 +941,15 @@ size_t states_amount[MAX_STATES] = {
     N(ST_99),
     N(ST_100),
     N(ST_101),
-    N(ST_102)
+    N(ST_102),
+    N(ST_110),
+    N(ST_111),
+    N(ST_112),
+    N(ST_113),
+    N(ST_114),
+    N(ST_115),
+    N(ST_116)
+
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -1000,7 +1055,14 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_99,
     ST_100,
     ST_101,
-    ST_102
+    ST_102,
+    ST_110,
+    ST_111,
+    ST_112,
+    ST_113,
+    ST_114,
+    ST_115,
+    ST_116
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {
