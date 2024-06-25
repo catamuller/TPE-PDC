@@ -62,7 +62,6 @@ static int create_connection_socket(char * ip, char * port){
     }
 
     return sock;
-
 }
 
 int connect_to_server(char * ip, char * port) {

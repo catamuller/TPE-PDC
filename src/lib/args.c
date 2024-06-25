@@ -64,6 +64,8 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
     args->mng_addr   = "127.0.0.1";
     args->mng_port   = 8080;
 
+    args->conf_port  = 2526;
+
     args->disectors_enabled = true;
 
     int c;
@@ -75,7 +77,7 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
             { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "hl:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hl:P:u:c:v", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -97,6 +99,9 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
                     user(optarg, args->users + nusers);
                     nusers++;
                 }
+                break;
+            case 'c':
+                args->conf_port = port(optarg);
                 break;
             case 'v':
                 version();

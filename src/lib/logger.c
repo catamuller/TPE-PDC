@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #define SUCCESS 0
 #define ERROR 1
@@ -11,6 +12,8 @@ FILE *log_out = NULL;
 int canWrite = ERROR;
 char logBuffer[BUFFER_SIZE];
 int bufferWritten = 0;
+
+bool logging = true;
 
 pthread_mutex_t logger_mutex;
 time_t timer;
@@ -61,6 +64,8 @@ size_t count_format_specifiers(const char *str) {
 int log_data(char *str, ...) {
     if (canWrite != SUCCESS)
         return ERROR;
+    if (!logging)
+        return SUCCESS;
 
     // While not very efficient, this stops invalid memory from being accessed
     va_list args_aux;
@@ -100,4 +105,8 @@ int log_data(char *str, ...) {
 
     pthread_mutex_unlock(&logger_mutex);
     return SUCCESS;
+}
+
+void set_logging(bool value) {
+    logging = value;
 }

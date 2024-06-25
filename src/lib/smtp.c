@@ -696,11 +696,11 @@ static unsigned server_ehlo(struct selector_key * key) {
 }
 
 static unsigned server_rset(struct selector_key * key) {
-    return server_template(key, SERVER_RSET, "%d - RESET\n", status_action_okay, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_RSET, "%d - OK\n", status_action_okay, CLIENT_MAIL_FROM);
 }
 
 static unsigned server_noop(struct selector_key * key) {
-    return server_template(key, SERVER_NOOP, "%d - NO OPERATION\n", status_action_okay, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_NOOP, "%d - OK\n", status_action_okay, CLIENT_MAIL_FROM);
 }
 
 static unsigned server_stat_active_connections(struct selector_key *key) {

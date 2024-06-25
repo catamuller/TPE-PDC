@@ -17,6 +17,7 @@
 #include "lib/headers/utils.h"
 #include "lib/headers/smtp.h"
 #include "lib/headers/logger.h"
+#include "lib/headers/config_handler.h"
 
 #define MAX_REQUESTS 20
 #define INITIAL_SELECTOR 1024
@@ -43,10 +44,13 @@ int main(int argc, char ** argv) {
   fd_selector selector      = NULL;
 
   int master_sockets[2] = {-1, -1}; // IPv4 e IPv6
+  int config_socket = -1;
   struct sockaddr * addresses[2];
   if (init_addresses(addresses, &err_msg) < 0) goto finally;
   ip_addr(addresses, port);
   if (init_sockets(master_sockets, &err_msg) < 0) goto finally;
+
+  if ((config_socket = init_config_socket(args.mng_addr, args.conf_port)) < 0) goto finally;
   args.mail_dir = "mail_dir";
   mkmaildir(args.mail_dir);
 
@@ -89,6 +93,12 @@ int main(int argc, char ** argv) {
     .handle_close = NULL,
   };
 
+  const struct fd_handler config = {
+    .handle_read = config_read,
+    .handle_write = NULL,
+    .handle_close = NULL,
+  };
+
   ss = selector_register(selector,master_sockets[0],&smtp,OP_READ,NULL);
   if (ss != SELECTOR_SUCCESS) {
     err_msg = "Unable to register FD for IPv4.";
@@ -99,6 +109,12 @@ int main(int argc, char ** argv) {
   if (ss != SELECTOR_SUCCESS) {
     err_msg = "Unable to register FD for IPv6.";
     goto finally;
+  }
+
+  ss = selector_register(selector, config_socket, &config, OP_READ, NULL);
+  if (ss != SELECTOR_SUCCESS) {
+      err_msg = "Unable to start config FD.";
+      goto finally;
   }
 
   log_data("SMTP Server Initialized");
