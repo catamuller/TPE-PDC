@@ -24,7 +24,7 @@ static void display_help(){
     printf(
         "Commands available:\n\n"
         "QUIT quits the session.\n"
-        "logging= <boolean> enables or disables server logging.\n"
+        "logging=<(1|0)> enables or disables server logging.\n"
         );
 }
 
