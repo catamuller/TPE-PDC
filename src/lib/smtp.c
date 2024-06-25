@@ -494,16 +494,16 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpacesOrEmpty(state->state->user)) {
-                    ret = SERVER_INVALID_HELO_CMD;
-                    break;
-                }
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
                 // }
                 if (state->stm.current->state > CLIENT_HELLO) {
                     ret = SERVER_ALREADY_GREETED;
+                    break;
+                }
+                if (allSpacesOrEmpty(state->state->user)) {
+                    ret = SERVER_INVALID_HELO_CMD;
                     break;
                 }
                 strcpy(state->stm.currentUser,state->state->user);
@@ -513,16 +513,17 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpacesOrEmpty(state->state->user)) {
-                    ret = SERVER_INVALID_HELO_CMD;
-                    break;
-                }
+            
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
                 // }
                 if (state->stm.current->state > CLIENT_HELLO) {
                     ret = SERVER_ALREADY_GREETED;
+                    break;
+                }
+                if (allSpacesOrEmpty(state->state->user)) {
+                    ret = SERVER_INVALID_HELO_CMD;
                     break;
                 }
                 strcpy(state->stm.currentUser,state->state->user);
@@ -584,16 +585,16 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpacesOrEmpty(state->state->mailFrom)) {
-                    ret = SERVER_INVALID_MAIL_CMD;
-                    break;
-                }
                 if (state->stm.current->state < CLIENT_MAIL_FROM) {
                     ret = SERVER_NO_GREETING;
                     break;
                 }
                 if (state->stm.current->state > CLIENT_MAIL_FROM) {
                     ret = SERVER_ALREADY_MAIL;
+                    break;
+                }
+                if (allSpacesOrEmpty(state->state->mailFrom)) {
+                    ret = SERVER_INVALID_MAIL_CMD;
                     break;
                 }
                 ret = SERVER_MAIL_FROM;
@@ -608,12 +609,12 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpacesOrEmpty(state->state->rcptTo[state->state->clientRcptToIndex])) {
-                    ret = SERVER_INVALID_RCPT_CMD;
-                    break;
-                }
                 if (state->stm.current->state < CLIENT_RCPT_TO) {
                     ret = SERVER_NO_MAIL;
+                    break;
+                }
+                if (allSpacesOrEmpty(state->state->rcptTo[state->state->clientRcptToIndex])) {
+                    ret = SERVER_INVALID_RCPT_CMD;
                     break;
                 }
                 ret = SERVER_RCPT_TO;
