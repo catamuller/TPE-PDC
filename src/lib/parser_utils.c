@@ -55,6 +55,10 @@ void eqMAILFROM(struct parser_event *ret, const uint8_t c) {
     type(MAIL_FROM_CMP_EQ, ret, c);
 }
 
+void neqSTAT(struct parser_event *ret, const uint8_t c) {
+    type(STAT_CMP_NEQ, ret, c);
+}
+
 void eqRCPT(struct parser_event *ret, const uint8_t c) {
     type(RCPT_TO_CMP_EQ, ret, c);
 }
@@ -98,6 +102,26 @@ void eqNOOP(struct parser_event *ret, const uint8_t c) {
 
 void eqHELP(struct parser_event *ret, const uint8_t c) {
     type(HELP_CMP_EQ, ret, c);
+}
+
+void eqVRFY(struct parser_event *ret, const uint8_t c) {
+    type(VRFY_CMP_EQ, ret, c);
+}
+
+void neqMAIL(struct parser_event *ret, const uint8_t c) {
+    type(MAIL_CMP_NEQ, ret, c);
+}
+
+void neqHELO(struct parser_event *ret, const uint8_t c) {
+    type(HELO_CMP_NEQ, ret, c);
+}
+
+void neqEHLO(struct parser_event *ret, const uint8_t c) {
+    type(EHLO_CMP_NEQ, ret, c);
+}
+
+void neqRCPT(struct parser_event *ret, const uint8_t c) {
+    type(RCPT_CMP_NEQ, ret, c);
 }
 
 void neqDomain(struct parser_event *ret, const uint8_t c) {
