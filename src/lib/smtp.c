@@ -30,13 +30,15 @@ size_t current_connections = 0;
 size_t transferred_bytes = 0;
 size_t total_mails_sent = 0;
 
-static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
-                             "SERVER_EHLO", "CLIENT_RSET", "SEVER_RSET", "CLIENT_NOOP", "SERVER_NOOP", "CLIENT_HELP", "SERVER_HELP",  "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
+static char* state_names[] = {"SERVER_UNRECOGNIZED_CMD", "SERVER_INVALID_MAIL_CMD", "SERVER_INVALID_HELO_CMD", "SERVER_INVALID_EHLO_CMD", "SERVER_INVALID_RCPT_CMD", "SERVER_INVALID_STAT_CMD",
+                             "CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
+                             "SERVER_EHLO", "CLIENT_RSET", "SEVER_RSET", "CLIENT_NOOP", "SERVER_NOOP", "CLIENT_HELP", "SERVER_HELP", "CLIENT_VRFY", "SERVER_VRFY", "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
                              "CLIENT_STAT_TOTAL_CONNECTIONS", "SERVER_STAT_TOTAL_CONNECTIONS",
                              "CLIENT_STAT_BYTES_TRANSFERED","SERVER_STAT_BYTES_TRANSFERED", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
                              "SERVER_MAIL_FROM", "SERVER_WRONG_DOMAIN", "SERVER_NO_RCPT", "CLIENT_RCPT_TO", "SERVER_RCPT_TO",
                              "CLIENT_DATA", "SERVER_DATA", "CLIENT_MAIL_CONTENT", "SERVER_MAIL_END", "SERVER_WRONG_ARGUMENTS",
-                             "ERROR", "QUIT", "CLOSE"};
+                             "ERROR", "QUIT", "CLOSE"
+                             };
 
 
 typedef struct smtp {
@@ -95,6 +97,7 @@ static unsigned server_stat_bytes_transfered(struct selector_key *key);
 static unsigned server_rset(struct selector_key *key);
 static unsigned server_noop(struct selector_key *key);
 static unsigned server_help(struct selector_key *key);
+static unsigned server_vrfy(struct selector_key *key);
 static unsigned client_read(struct selector_key * key);
 static unsigned server_no_greeting(struct selector_key * key);
 static unsigned server_hello(struct selector_key * key);
@@ -114,6 +117,11 @@ static unsigned server_error(struct selector_key *key);
 static unsigned server_quit(struct selector_key *key);
 static unsigned server_close(struct selector_key *key);
 static unsigned server_unrecognized_cmd(struct selector_key *key);
+static unsigned server_invalid_mail_cmd(struct selector_key *key);
+static unsigned server_invalid_helo_cmd(struct selector_key *key);
+static unsigned server_invalid_ehlo_cmd(struct selector_key *key);
+static unsigned server_invalid_rcpt_cmd(struct selector_key *key);
+static unsigned server_invalid_stat_cmd(struct selector_key *key);
 
 static const struct state_definition client_statbl[] = {
     {
@@ -121,6 +129,36 @@ static const struct state_definition client_statbl[] = {
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_write_ready   = server_unrecognized_cmd
+    },
+    {
+        .state            = SERVER_INVALID_MAIL_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_invalid_mail_cmd
+    },
+    {
+        .state            = SERVER_INVALID_HELO_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_invalid_helo_cmd
+    },
+    {
+        .state            = SERVER_INVALID_EHLO_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_invalid_ehlo_cmd
+    },
+    {
+        .state            = SERVER_INVALID_RCPT_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_invalid_rcpt_cmd
+    },
+    {
+        .state            = SERVER_INVALID_STAT_CMD,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_invalid_stat_cmd
     },
     {
         .state            = CLIENT_HELLO,
@@ -156,7 +194,7 @@ static const struct state_definition client_statbl[] = {
         .state            = SERVER_RSET,
         .on_arrival       = NULL,
         .on_departure     = NULL,
-        .on_write_ready    = server_rset,
+        .on_write_ready   = server_rset,
     },
     {
         .state            = CLIENT_NOOP,
@@ -168,7 +206,7 @@ static const struct state_definition client_statbl[] = {
         .state            = SERVER_NOOP,
         .on_arrival       = NULL,
         .on_departure     = NULL,
-        .on_write_ready    = server_noop,
+        .on_write_ready   = server_noop,
     },
     {
         .state            = CLIENT_HELP,
@@ -180,7 +218,19 @@ static const struct state_definition client_statbl[] = {
         .state            = SERVER_HELP,
         .on_arrival       = NULL,
         .on_departure     = NULL,
-        .on_write_ready    = server_help,
+        .on_write_ready   = server_help,
+    },
+    {
+        .state            = CLIENT_VRFY,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_read_ready    = client_read,
+    },
+    {
+        .state            = SERVER_VRFY,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready   = server_vrfy,
     },
     {
         .state            = CLIENT_STAT_CURRENT_CONNECTIONS,
@@ -407,6 +457,13 @@ fail:
 //     return ret;
 // }
 
+bool allSpaces(char * str) {
+  for(int i=0;str[i];i++)
+    if (str[i] != ' ')
+      return false;
+  return true;
+}
+
 static unsigned client_read(struct selector_key * key) {
 
     //char buffer[BUFFER_MAX_SIZE] = {0};
@@ -424,6 +481,10 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
+                if (allSpaces(state->state->user)) {
+                    ret = SERVER_INVALID_HELO_CMD;
+                    break;
+                }
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
@@ -439,6 +500,10 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
+                if (allSpaces(state->state->user)) {
+                    ret = SERVER_INVALID_HELO_CMD;
+                    break;
+                }
                 // if (state->stm.current->state < CLIENT_HELLO) {
                 //     ret = SERVER_NO_GREETING;
                 //     break;
@@ -514,10 +579,20 @@ static unsigned client_read(struct selector_key * key) {
                 parser_reset(state->smtp_parser);
                 ret = SERVER_HELP;
                 break;
+            case VRFY_CMP_EQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_VRFY;
+                break;
             case MAIL_FROM_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
+                if (allSpaces(state->state->mailFrom)) {
+                    ret = SERVER_INVALID_MAIL_CMD;
+                    break;
+                }
                 if (state->stm.current->state < CLIENT_MAIL_FROM) {
                     ret = SERVER_NO_GREETING;
                     break;
@@ -528,10 +603,20 @@ static unsigned client_read(struct selector_key * key) {
                 }
                 ret = SERVER_MAIL_FROM;
                 break;
+            case MAIL_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_INVALID_MAIL_CMD;
+                break;
             case RCPT_TO_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
+                if (allSpaces(state->state->rcptTo[state->state->clientRcptToIndex])) {
+                    ret = SERVER_INVALID_RCPT_CMD;
+                    break;
+                }
                 if (state->stm.current->state < CLIENT_RCPT_TO) {
                     ret = SERVER_NO_MAIL;
                     break;
@@ -559,6 +644,30 @@ static unsigned client_read(struct selector_key * key) {
             //     sendMail();
             //     ret = SERVER_MAIL_END;
             //     break;
+            case HELO_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_INVALID_HELO_CMD;
+                break;
+            case EHLO_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_INVALID_EHLO_CMD;
+                break;
+            case RCPT_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_INVALID_RCPT_CMD;
+                break;
+            case STAT_CMP_NEQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_INVALID_STAT_CMD;
+                break;
             case NEQ_DOMAIN:
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
@@ -699,6 +808,19 @@ static unsigned server_unrecognized_cmd(struct selector_key *key) {
     return server_template(key, SERVER_UNRECOGNIZED_CMD, "%d - Unrecognized command\n", status_syntax_error_no_command, GOTO_PREVIOUS);
 }
 
+static unsigned server_invalid_helo_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_INVALID_HELO_CMD, "%d - Syntax: HELO <hostname>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+}
+
+static unsigned server_invalid_ehlo_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_INVALID_EHLO_CMD, "%d - Syntax: EHLO <hostname>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+}
+
+static unsigned server_invalid_rcpt_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_INVALID_RCPT_CMD, "%d - Syntax: RCPT TO: <user>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+}
+
+
 static unsigned server_no_greeting(struct selector_key * key) {
     return server_template(key, SERVER_NO_GREETING, "%d - Say hi!\n", status_user_not_local, CLIENT_HELLO);
 }
@@ -749,6 +871,10 @@ static unsigned server_help(struct selector_key * key) {
     );
 }
 
+static unsigned server_vrfy(struct selector_key *key) {
+    return server_template(key, SERVER_VRFY, "%d - Command not implemented\n", status_cmd_not_implemented, GOTO_PREVIOUS);
+}
+
 static unsigned server_stat_active_connections(struct selector_key *key) {
     return stat_template(key, SERVER_STAT_CURRENT_CONNECTIONS, current_connections, CLIENT_MAIL_FROM);
 }
@@ -780,6 +906,14 @@ static unsigned server_already_mail(struct selector_key *key) {
 
 static unsigned server_wrong_domain(struct selector_key *key) {
     return server_template(key, SERVER_WRONG_DOMAIN, "%d - Invalid specified domain\n", status_mailbox_not_found ,GOTO_PREVIOUS);
+}
+
+static unsigned server_invalid_mail_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_INVALID_MAIL_CMD, "%d - Syntax: MAIL FROM: <user@domain>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+}
+
+static unsigned server_invalid_stat_cmd(struct selector_key *key) {
+    return server_template(key, SERVER_INVALID_MAIL_CMD, "%d - Syntax: XSTAT <TOTAL|CURRENT|BYTES>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
 }
 
 static unsigned server_no_rcpt(struct selector_key *key) {

@@ -119,7 +119,7 @@ static const struct parser_state_transition ST_3[] = {
 static const struct parser_state_transition ST_4[] = {
   {.when = ' ',     .dest = HELO_SPACE,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_HELO,         .act1 = neqHELO}
 };
 
 static const struct parser_state_transition ST_5[] = {
@@ -140,7 +140,7 @@ static const struct parser_state_transition ST_7[] = {
   {.when = 'O',     .dest = EHLO_O,      .act1 = may_eq},
   {.when = 'o',     .dest = EHLO_O,      .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_EHLO,         .act1 = neqEHLO}
 };
 
 static const struct parser_state_transition ST_8[] = {
@@ -174,7 +174,7 @@ static const struct parser_state_transition ST_12[] = {
   {.when = ' ',     .dest = MAIL_SPACE,      .act1 = may_eq},
   {.when = ' ',     .dest = MAIL_SPACE,      .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,         .act1 = neqMAIL}
 };
 
 
@@ -195,7 +195,7 @@ static const struct parser_state_transition ST_14[] = {
 static const struct parser_state_transition ST_15[] = {
   {.when = ' ',     .dest = RCPT_SPACE,      .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_RCPT,         .act1 = neqRCPT}
 };
 
 static const struct parser_state_transition ST_16[] = {
@@ -221,6 +221,7 @@ static const struct parser_state_transition ST_18[] = {
 
 static const struct parser_state_transition ST_19[] = {
   /* TODO: define what to do when client writes DATA */
+  {.when = ' ',     .dest = DATA_FINAL_A,   .act1 = may_eq},
   {.when = '\r',    .dest = DATA_CR_STATE,  .act1 = may_eq},
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -241,6 +242,7 @@ static const struct parser_state_transition ST_21[] = {
 
 static const struct parser_state_transition ST_22[] = {
 
+  {.when = ' ',  .dest = RSET_T,        .act1 = may_eq},
   {.when = '\r', .dest = RSET_CR_STATE, .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
@@ -268,6 +270,7 @@ static const struct parser_state_transition ST_25[] = {
 };
 
 static const struct parser_state_transition ST_26[] = {
+  {.when = ' ',       .dest = NOOP_P,             .act1 = may_eq},
   {.when = '\r',     .dest = NOOP_CR_STATE,      .act1 = may_eq},
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -295,6 +298,7 @@ static const struct parser_state_transition ST_29[] = {
 
 static const struct parser_state_transition ST_30[] = {
   /* TODO: define what to do when client writes QUIT */
+  {.when = ' ',     .dest = QUIT_T,         .act1 = may_eq},
   {.when = '\r',    .dest = QUIT_CR_STATE,  .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
@@ -322,7 +326,8 @@ static const struct parser_state_transition ST_33[] = {
 };
 
 static const struct parser_state_transition ST_34[] = {
-  /* TODO: define what to do when client writes VRFY */
+  {.when = ' ',     .dest = VRFY_Y,        .act1 = may_eq},
+  {.when = '\r',    .dest = VRFY_CR_STATE, .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -339,12 +344,15 @@ static const struct parser_state_transition ST_35[] = {
 
 static const struct parser_state_transition ST_36[] = {
   /* TODO: define what to do when client writes HELO\s*/
+  {.when = ' ',     .dest = HELO_DOMAIN_STATE,         .act1 = may_eq}, // ignore spaces
+  {.when = '\r',    .dest = NEQ_HELO,                  .act1 = neqHELO},
   {.when = ANY,     .dest = HELO_DOMAIN_STATE,         .act1 = USERSave}
 };
 
 static const struct parser_state_transition ST_37[] = {
   /* TODO: define what to do when client writes EHLO\s*/
-
+  {.when = ' ',     .dest = EHLO_DOMAIN_STATE,         .act1 = may_eq},
+  {.when = '\r',    .dest = NEQ_EHLO,                  .act1 = neqEHLO},
   {.when = ANY,     .dest = EHLO_DOMAIN_STATE,         .act1 = USERSave}
 };
 
@@ -353,7 +361,7 @@ static const struct parser_state_transition ST_38[] = {
   {.when = 'F',     .dest = FROM_F,        .act1 = may_eq},
   {.when = 'f',     .dest = FROM_F,        .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,         .act1 = neqMAIL}
 };
 
 static const struct parser_state_transition ST_39[] = {
@@ -361,10 +369,11 @@ static const struct parser_state_transition ST_39[] = {
   {.when = 'T',     .dest = TO_T,          .act1 = may_eq},
   {.when = 't',     .dest = TO_T,          .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_RCPT,         .act1 = neqRCPT}
 };
 
 static const struct parser_state_transition ST_40[] = {
+  {.when = ' ',     .dest = HELO_DOMAIN_STATE, .act1 = may_eq}, // ignore spaces
   {.when = '\r',    .dest = HELO_CR_STATE,     .act1 = may_eq},
 
   {.when = ANY,     .dest = HELO_DOMAIN_STATE, .act1 = USERSave}
@@ -382,6 +391,7 @@ static const struct parser_state_transition ST_42[] = {
 };
 
 static const struct parser_state_transition ST_43[] = {
+  {.when = ' ',     .dest = EHLO_DOMAIN_STATE, .act1 = may_eq}, // ignore spaces
   {.when = '\r',    .dest = EHLO_CR_STATE,     .act1 = may_eq},
 
   {.when = ANY,     .dest = EHLO_DOMAIN_STATE, .act1 = USERSave}
@@ -408,38 +418,39 @@ static const struct parser_state_transition ST_47[] = {
   {.when = 'R',     .dest = FROM_R,        .act1 = may_eq},
   {.when = 'r',     .dest = FROM_R,        .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,           .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,           .act1 = neqMAIL}
 };
 
 static const struct parser_state_transition ST_48[] = {
   {.when = 'O',     .dest = FROM_O,        .act1 = may_eq},
   {.when = 'o',     .dest = FROM_O,        .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,           .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,           .act1 = neqMAIL}
 };
 
 static const struct parser_state_transition ST_49[] = {
   {.when = 'M',     .dest = FROM_M,        .act1 = may_eq},
   {.when = 'm',     .dest = FROM_M,        .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,           .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,           .act1 = neqMAIL}
 };
 
 static const struct parser_state_transition ST_50[] = {
   {.when = ':',     .dest = FROM_COLON,  .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_MAIL,         .act1 = neqMAIL}
 };
 
 
 static const struct parser_state_transition ST_51[] = {
   {.when = ' ',     .dest = FROM_SPACE,  .act1 = may_eq},
-  {.when = ANY,     .dest = FROM_SPACE,  .act1 = may_eq} // TODO: save character in string with act2
+  {.when = ANY,     .dest = FROM_SPACE,  .act1 = MAILFROMSave} // TODO: save character in string with act2
 };
 
 static const struct parser_state_transition ST_52[] = {
   {.when = '@',     .dest = MAX_STATES-100,      .act1 =  MAILFROMSave},
   {.when = '\r',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
+  {.when = '\n',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = ANY,     .dest = FROM_SPACE,          .act1 = MAILFROMSave}
 };
 
@@ -452,30 +463,31 @@ static const struct parser_state_transition ST_54[] = {
   {.when = 'O',     .dest = TO_O,        .act1 = may_eq},
   {.when = 'o',     .dest = TO_O,        .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,           .act1 = neq}
+  {.when = ANY,     .dest = NEQ_RCPT,           .act1 = neqRCPT}
 };
 
 static const struct parser_state_transition ST_55[] = {
   {.when = ':',     .dest = TO_COLON,  .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_RCPT,         .act1 = neqRCPT}
 };
 
 static const struct parser_state_transition ST_56[] = {
-  {.when = ' ',     .dest = TO_COLON,  .act1 = may_eq},
-  {.when = '@',     .dest = NEQ,       .act1 = neq},
+  {.when = '\r',    .dest = NEQ_RCPT,  .act1 = neqRCPT},
+  {.when = ' ',     .dest = TO_SPACE,  .act1 = may_eq},
+  {.when = '@',     .dest = NEQ_RCPT,  .act1 = neqRCPT},
   {.when = ANY,     .dest = TO_SPACE,  .act1 = RCPTTOSave} // TODO: save character in string with act2
 };
 
 static const struct parser_state_transition ST_57[] = {
   {.when = '\r',    .dest = RCPT_TO_CR_STATE, .act1 = may_eq},
-  {.when = ' ',     .dest = NEQ,              .act1 = neq},
+  {.when = ' ',     .dest = TO_SPACE,              .act1 = may_eq}, // ignore spaces
   {.when = ANY,     .dest = TO_SPACE,   .act1 = RCPTTOSave}
 };
 
 static const struct parser_state_transition ST_58[] = {
   {.when = '\n',    .dest = RCPT_TO_LF_STATE, .act1 = eqRCPT},
-  {.when = ANY,     .dest = TO_SPACE,   .act1 = eqRCPT} 
+  {.when = ANY,     .dest = NEQ_RCPT,   .act1 = neqRCPT} 
 };
 
 static const struct parser_state_transition ST_59[] = {
@@ -540,8 +552,8 @@ static const struct parser_state_transition ST_68[] = {
 
 static const struct parser_state_transition ST_69[] = {
   {.when = ' ',     .dest = STAT_SPACE,       .act1 = may_eq},
-
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = '\r',    .dest = NEQ_STAT,          .act1 = neqSTAT},
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_70[] = {
@@ -554,129 +566,129 @@ static const struct parser_state_transition ST_70[] = {
   {.when = 'B',     .dest = BYTES_B,       .act1 = may_eq},
   {.when = 'b',     .dest = BYTES_B,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_71[] = {
   {.when = 'U',     .dest = CURRENT_U,       .act1 = may_eq},
   {.when = 'u',     .dest = CURRENT_U,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_72[] = {
   {.when = 'R',     .dest = CURRENT_R,       .act1 = may_eq},
   {.when = 'r',     .dest = CURRENT_R,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_73[] = {
   {.when = 'R',     .dest = CURRENT_SECOND_R,       .act1 = may_eq},
   {.when = 'r',     .dest = CURRENT_SECOND_R,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_74[] = {
   {.when = 'E',     .dest = CURRENT_E,       .act1 = may_eq},
   {.when = 'e',     .dest = CURRENT_E,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_75[] = {
   {.when = 'N',     .dest = CURRENT_N,       .act1 = may_eq},
   {.when = 'n',     .dest = CURRENT_N,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_76[] = {
   {.when = 'T',     .dest = CURRENT_T,       .act1 = may_eq},
   {.when = 't',     .dest = CURRENT_T,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_77[] = {
   {.when = '\r',     .dest = CURRENT_CR_STATE,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_78[] = {
   {.when = 'O',     .dest = TOTAL_O,       .act1 = may_eq},
   {.when = 'o',     .dest = TOTAL_O,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_79[] = {
   {.when = 'T',     .dest = TOTAL_SECOND_T,       .act1 = may_eq},
   {.when = 't',     .dest = TOTAL_SECOND_T,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_80[] = {
   {.when = 'A',     .dest = TOTAL_A,       .act1 = may_eq},
   {.when = 'a',     .dest = TOTAL_A,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_81[] = {
   {.when = 'L',     .dest = TOTAL_L,       .act1 = may_eq},
   {.when = 'l',     .dest = TOTAL_L,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_82[] = {
   {.when = '\r',     .dest = TOTAL_CR_STATE,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_83[] = {
   {.when = 'Y',     .dest = BYTES_Y,       .act1 = may_eq},
   {.when = 'y',     .dest = BYTES_Y,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_84[] = {
   {.when = 'T',     .dest = BYTES_T,       .act1 = may_eq},
   {.when = 't',     .dest = BYTES_T,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_85[] = {
   {.when = 'E',     .dest = BYTES_E,       .act1 = may_eq},
   {.when = 'e',     .dest = BYTES_E,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_86[] = {
   {.when = 'S',     .dest = BYTES_S,       .act1 = may_eq},
   {.when = 's',     .dest = BYTES_S,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_87[] = {
   {.when = '\r',     .dest = BYTES_CR_STATE,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_88[] = {
   {.when = '\n',     .dest = CURRENT_LF_STATE,       .act1 = eqCURRENT}, 
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq} 
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT} 
 };
 
 static const struct parser_state_transition ST_89[] = {
@@ -687,7 +699,7 @@ static const struct parser_state_transition ST_89[] = {
 static const struct parser_state_transition ST_90[] = {
   {.when = '\n',     .dest = TOTAL_LF_STATE,       .act1 = eqTOTAL}, 
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_91[] = {
@@ -698,7 +710,7 @@ static const struct parser_state_transition ST_91[] = {
 static const struct parser_state_transition ST_92[] = {
   {.when = '\n',     .dest = BYTES_LF_STATE,       .act1 = eqBYTES}, 
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = NEQ_STAT,          .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition ST_93[] = {
@@ -743,6 +755,7 @@ static const struct parser_state_transition ST_99[] = {
 };
 
 static const struct parser_state_transition ST_100[] = {
+  {.when = ' ',      .dest = HELP_P,                .act1 = may_eq},
   {.when = '\r',     .dest = HELP_CR_STATE,         .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,          .act1 = neq}
@@ -760,6 +773,38 @@ static const struct parser_state_transition ST_102[] = {
 
   {.when = ANY,     .dest = HELP_LF_STATE,          .act1 = eqHELP}
 
+};
+
+static const struct parser_state_transition ST_103[] = {
+  {.when = '\n',    .dest = VRFY_LF_STATE, .act1 = eqVRFY},
+
+  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+};
+
+static const struct parser_state_transition ST_104[] = {
+
+  {.when = ANY,    .dest = VRFY_LF_STATE, .act1 = eqVRFY},
+
+};
+
+static const struct parser_state_transition ST_105[] = {
+  {.when = ANY,    .dest = NEQ_MAIL,      .act1 = neqMAIL}
+};
+
+static const struct parser_state_transition ST_106[] = {
+  {.when = ANY,    .dest = NEQ_HELO,      .act1 = neqHELO}
+};
+
+static const struct parser_state_transition ST_107[] = {
+  {.when = ANY,    .dest = NEQ_EHLO,      .act1 = neqEHLO}
+};
+
+static const struct parser_state_transition ST_108[] = {
+  {.when = ANY,    .dest = NEQ_RCPT,      .act1 = neqRCPT}
+};
+
+static const struct parser_state_transition ST_109[] = {
+  {.when = ANY,    .dest = NEQ_STAT,      .act1 = neqSTAT}
 };
 
 static const struct parser_state_transition DT_0[] = {
@@ -894,7 +939,14 @@ size_t states_amount[MAX_STATES] = {
     N(ST_99),
     N(ST_100),
     N(ST_101),
-    N(ST_102)
+    N(ST_102),
+    N(ST_103),
+    N(ST_104),
+    N(ST_105),
+    N(ST_106),
+    N(ST_107),
+    N(ST_108),
+    N(ST_109)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -1000,7 +1052,14 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_99,
     ST_100,
     ST_101,
-    ST_102
+    ST_102,
+    ST_103,
+    ST_104,
+    ST_105,
+    ST_106,
+    ST_107,
+    ST_108,
+    ST_109
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {
@@ -1096,6 +1155,7 @@ const struct parser_event * smtp_parser_consume(buffer * buff, struct parser * p
     const uint8_t c = buffer_read(buff);
     e1 = smtp_parser_feed(p, c);
     switch(e1->type) {
+      case EHLO_CMP_EQ:
       case HELO_CMP_EQ:
         state->user[state->userIndex] = '\0';
         // smtp->user[smtp->userIndex] = '\0';
