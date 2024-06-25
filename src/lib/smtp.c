@@ -686,7 +686,7 @@ static unsigned stat_template(struct selector_key * key, int returnState, size_t
 } 
 
 static unsigned server_unrecognized_cmd(struct selector_key *key) {
-    return server_template(key, SERVER_UNRECOGNIZED_CMD, "%d - Unrecognized command\n", status_syntax_error_no_command, CLIENT_HELLO);
+    return server_template(key, SERVER_UNRECOGNIZED_CMD, "%d - Unrecognized command\n", status_syntax_error_no_command, GOTO_PREVIOUS);
 }
 
 static unsigned server_no_greeting(struct selector_key * key) {
