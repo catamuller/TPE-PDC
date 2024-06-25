@@ -62,8 +62,8 @@ void _randomID(char* buffer) {
 }
 
 static const struct parser_state_transition ST_0[] = {
-  {.when = 'H',     .dest = HELO_H,      .act1 = may_eq},
-  {.when = 'h',     .dest = HELO_H,      .act1 = may_eq},
+  {.when = 'H',     .dest = H,      .act1 = may_eq}, /* HELO or HELP */
+  {.when = 'h',     .dest = H,      .act1 = may_eq},
   
   {.when = 'E',     .dest = EHLO_E,      .act1 = may_eq},
   {.when = 'e',     .dest = EHLO_E,      .act1 = may_eq},
@@ -86,22 +86,22 @@ static const struct parser_state_transition ST_0[] = {
   {.when = 'V',     .dest = VRFY_V,      .act1 = may_eq},
   {.when = 'v',     .dest = VRFY_V,      .act1 = may_eq},
 
-  {.when = 'S',     .dest = STAT_S,      .act1 = may_eq},
-  {.when = 's',     .dest = STAT_S,      .act1 = may_eq},
+  {.when = 'X',     .dest = XSTAT_X,      .act1 = may_eq},
+  {.when = 'x',     .dest = XSTAT_X,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
 
 static const struct parser_state_transition ST_1[] = {
-  {.when = 'E',     .dest = HELO_E,      .act1 = may_eq},
-  {.when = 'e',     .dest = HELO_E,      .act1 = may_eq},
+  {.when = 'E',     .dest = E,      .act1 = may_eq},
+  {.when = 'e',     .dest = E,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
 
 static const struct parser_state_transition ST_2[] = {
-  {.when = 'L',     .dest = HELO_L,      .act1 = may_eq},
-  {.when = 'l',     .dest = HELO_L,      .act1 = may_eq},
+  {.when = 'L',     .dest = L,      .act1 = may_eq},
+  {.when = 'l',     .dest = L,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -109,6 +109,9 @@ static const struct parser_state_transition ST_2[] = {
 static const struct parser_state_transition ST_3[] = {
   {.when = 'O',     .dest = HELO_O,      .act1 = may_eq},
   {.when = 'o',     .dest = HELO_O,      .act1 = may_eq},
+
+  {.when = 'P',     .dest = HELP_P,      .act1 = may_eq},
+  {.when = 'p',     .dest = HELP_P,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -725,6 +728,40 @@ static const struct parser_state_transition ST_97[] = {
   {.when = ANY,     .dest = RSET_LF_STATE,  .act1 = eqRSET}
 };
 
+static const struct parser_state_transition ST_98[] = {
+  {.when = 'S',     .dest = STAT_S,         .act1 = may_eq},
+  {.when = 's',     .dest = STAT_S,         .act1 = may_eq},
+
+  {.when = ANY,     .dest = CMD_NEQ,          .act1 = neqCMD}
+
+};
+
+static const struct parser_state_transition ST_99[] = {
+
+  {.when = ANY,     .dest = CMD_NEQ,          .act1 = neqCMD}
+
+};
+
+static const struct parser_state_transition ST_100[] = {
+  {.when = '\r',     .dest = HELP_CR_STATE,         .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+
+};
+
+static const struct parser_state_transition ST_101[] = {
+  {.when = '\n',     .dest = HELP_LF_STATE,         .act1 = eqHELP},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+
+};
+
+static const struct parser_state_transition ST_102[] = {
+
+  {.when = ANY,     .dest = HELP_LF_STATE,          .act1 = eqHELP}
+
+};
+
 static const struct parser_state_transition DT_0[] = {
   {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
   {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
@@ -852,7 +889,12 @@ size_t states_amount[MAX_STATES] = {
     N(ST_94),
     N(ST_95),
     N(ST_96),
-    N(ST_97)
+    N(ST_97),
+    N(ST_98),
+    N(ST_99),
+    N(ST_100),
+    N(ST_101),
+    N(ST_102)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -953,7 +995,12 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_94,
     ST_95,
     ST_96,
-    ST_97
+    ST_97,
+    ST_98,
+    ST_99,
+    ST_100,
+    ST_101,
+    ST_102
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {
