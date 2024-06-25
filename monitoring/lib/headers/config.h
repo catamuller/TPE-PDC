@@ -1,14 +1,10 @@
 #ifndef TPE_PDC_CONFIG_H
 #define TPE_PDC_CONFIG_H
 
-#define VERSION "v1.0"
+#define VERSION "v1.1"
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT "2525"
-
-#define MAX_CURRENT_CONNECTIONS 600
-
-#define MAX_TOTAL_CONNECTIONS 3000
 
 
 #endif //TPE_PDC_CONFIG_H

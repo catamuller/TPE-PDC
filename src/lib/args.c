@@ -47,7 +47,9 @@ static void usage(const char *progname) {
         "\n"
         "   -h               Imprime la ayuda y termina.\n"
         "   -l <addr>        Dirección donde servirá el servidor SMTP.\n"
-        "   -P <conf port>   Puerto entrante conexiones configuracion\n"
+        "   -P <con port>    Puerto entrante para conexiones.\n"
+        "   -C <conf addr>   Dirección entrante para configuración.\n"
+        "   -c <conf port>   Puerto entrante para configuración.\n"
         "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
         "   -v               Imprime información sobre la versión y termina.\n"
         "\n",
@@ -64,6 +66,7 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
     args->mng_addr   = "127.0.0.1";
     args->mng_port   = 8080;
 
+    args->conf_addr  = "127.0.0.1";
     args->conf_port  = 2526;
 
     args->disectors_enabled = true;
@@ -77,7 +80,7 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
             { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "hl:P:u:c:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hl:P:u:C:c:v", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -99,6 +102,9 @@ void parse_args(const int argc, char **argv, struct smtpargs *args) {
                     user(optarg, args->users + nusers);
                     nusers++;
                 }
+                break;
+            case 'C':
+                args->conf_addr = optarg;
                 break;
             case 'c':
                 args->conf_port = port(optarg);

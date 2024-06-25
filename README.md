@@ -1,6 +1,13 @@
 # Implementación de un servidor SMTP
 
-El trabajo consiste en la implementación de un servidor SMTP [RFC 5321](https://datatracker.ietf.org/doc/html/rfc5321). 
+El trabajo consiste en la implementación de un servidor SMTP [RFC 5321](https://datatracker.ietf.org/doc/html/rfc5321).
+
+## Materiales
+
+Dentro de la carpeta /src se encuentra el archivo fuente del servidor.
+En /config se disponse de los archivos necesarios para compilar el cliente y dentro de /monitoring, los archivos pertenecientes al monitoreo.
+
+El informe del proyecto se encuentra en la carpeta /docs.
 
 ## Ejecución del servidor
 
@@ -17,7 +24,31 @@ Una vez compilado se creará el archivo smtpd dentro de la carpeta /src. Para ej
 ./smtpd
 ```
 
-Para ver una lista de parámetros posibles, se puede usar el flag _-h_
+Luego, ir a la carpeta /config y repetir el comando:
+
+```
+make clean all
+```
+
+Se creara el binario client_config que se ejecuta con:
+
+```
+./client_config
+```
+
+Por ultimo se deben repetir los pasos anteriores en la carpeta /monitoring, ejecutando:
+
+```
+make clean all
+```
+
+Y analogamente, ejecutar el siguiente comando para correr:
+
+```
+./metrics
+```
+
+Para ver una lista de parámetros posibles, se puede usar el flag _-h_ en sus respectivos comnados de ejecuciones.
 
 ## Requisitos
 

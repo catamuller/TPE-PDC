@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
   ip_addr(addresses, port);
   if (init_sockets(master_sockets, &err_msg) < 0) goto finally;
 
-  if ((config_socket = init_config_socket(args.mng_addr, args.conf_port, &err_msg)) < 0) goto finally;
+  if ((config_socket = init_config_socket(args.conf_addr, args.conf_port, &err_msg)) < 0) goto finally;
   args.mail_dir = "mail_dir";
   mkmaildir(args.mail_dir);
 
