@@ -7,4 +7,6 @@ void accept_connection(struct selector_key *key);
 
 void close_connection(struct selector_key *key);
 
+void close_config_sockets(void);
+
 #endif //TPE_PDC_CONFIG_HANDLER_H
