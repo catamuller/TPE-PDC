@@ -912,7 +912,7 @@ static unsigned server_invalid_mail_cmd(struct selector_key *key) {
 }
 
 static unsigned server_invalid_stat_cmd(struct selector_key *key) {
-    return server_template(key, SERVER_INVALID_MAIL_CMD, "%d - Syntax: XSTAT <TOTAL|CURRENT|BYTES>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
+    return server_template(key, SERVER_INVALID_MAIL_CMD, "%d - Syntax: XSTAT <TOTAL|CURRENT|BYTES|MAILS>\n", status_syntax_error_in_parameters, GOTO_PREVIOUS);
 }
 
 static unsigned server_no_rcpt(struct selector_key *key) {

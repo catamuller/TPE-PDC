@@ -146,7 +146,7 @@ static const struct parser_state_transition ST_7[] = {
 static const struct parser_state_transition ST_8[] = {
   {.when = ' ',     .dest = EHLO_SPACE,       .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,         .act1 = neq}
+  {.when = ANY,     .dest = NEQ_EHLO,         .act1 = neqEHLO}
 };
 
 static const struct parser_state_transition ST_9[] = {
