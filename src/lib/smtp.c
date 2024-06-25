@@ -31,7 +31,7 @@ size_t transferred_bytes = 0;
 size_t total_mails_sent = 0;
 
 static char* state_names[] = {"CLIENT_HELLO", "SERVER_NO_GREETING", "SERVER_HELLO",
-                             "SERVER_EHLO", "CLIENT_RSET", "SEVER_RSET", "CLIENT_NOOP", "SERVER_NOOP",  "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
+                             "SERVER_EHLO", "CLIENT_RSET", "SEVER_RSET", "CLIENT_NOOP", "SERVER_NOOP", "CLIENT_HELP", "SERVER_HELP",  "CLIENT_STAT_CURRENT_CONNECTIONS", "SERVER_STAT_CURRENT_CONNECTIONS",
                              "CLIENT_STAT_TOTAL_CONNECTIONS", "SERVER_STAT_TOTAL_CONNECTIONS",
                              "CLIENT_STAT_BYTES_TRANSFERED","SERVER_STAT_BYTES_TRANSFERED", "SERVER_ALREADY_GREETED", "SERVER_NO_MAIL", "CLIENT_MAIL_FROM", "SERVER_ALREADY_MAIL",
                              "SERVER_MAIL_FROM", "SERVER_WRONG_DOMAIN", "SERVER_NO_RCPT", "CLIENT_RCPT_TO", "SERVER_RCPT_TO",
@@ -94,6 +94,7 @@ static unsigned server_stat_historic_connections(struct selector_key *key);
 static unsigned server_stat_bytes_transfered(struct selector_key *key);
 static unsigned server_rset(struct selector_key *key);
 static unsigned server_noop(struct selector_key *key);
+static unsigned server_help(struct selector_key *key);
 static unsigned client_read(struct selector_key * key);
 static unsigned server_no_greeting(struct selector_key * key);
 static unsigned server_hello(struct selector_key * key);
@@ -150,7 +151,6 @@ static const struct state_definition client_statbl[] = {
         .on_departure     = NULL,
         .on_write_ready    = server_rset,
     },
-
     {
         .state            = CLIENT_NOOP,
         .on_arrival       = NULL,
@@ -162,6 +162,18 @@ static const struct state_definition client_statbl[] = {
         .on_arrival       = NULL,
         .on_departure     = NULL,
         .on_write_ready    = server_noop,
+    },
+    {
+        .state            = CLIENT_HELP,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_read_ready    = client_read,
+    },
+    {
+        .state            = SERVER_HELP,
+        .on_arrival       = NULL,
+        .on_departure     = NULL,
+        .on_write_ready    = server_help,
     },
     {
         .state            = CLIENT_STAT_CURRENT_CONNECTIONS,
@@ -487,15 +499,13 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (state->stm.current->state < CLIENT_MAIL_FROM) {
-                    ret = SERVER_NO_GREETING;
-                    break;
-                }
-                if (state->stm.current->state > CLIENT_MAIL_FROM) {
-                    ret = SERVER_WRONG_ARGUMENTS;
-                    break;
-                }
                 ret = SERVER_NOOP;
+                break;
+            case HELP_CMP_EQ:
+                selector_set_interest_key(key, OP_WRITE);
+                buffer_reset(&state->read_buffer);
+                parser_reset(state->smtp_parser);
+                ret = SERVER_HELP;
                 break;
             case MAIL_FROM_CMP_EQ:
                 selector_set_interest_key(key, OP_WRITE);
@@ -701,6 +711,24 @@ static unsigned server_rset(struct selector_key * key) {
 
 static unsigned server_noop(struct selector_key * key) {
     return server_template(key, SERVER_NOOP, "%d - OK\n", status_action_okay, CLIENT_MAIL_FROM);
+}
+
+static unsigned server_help(struct selector_key * key) {
+    return server_template(key,
+        SERVER_HELP,
+        "%d - OK\n"
+        "HELO\n"
+        "EHLO\n"
+        "MAIL\n"
+        "RCPT\n"
+        "DATA\n"
+        "RSET\n"
+        "NOOP\n"
+        "QUIT\n"
+        "VRFY\n",
+        status_action_okay,
+        GOTO_PREVIOUS
+    );
 }
 
 static unsigned server_stat_active_connections(struct selector_key *key) {

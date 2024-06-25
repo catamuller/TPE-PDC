@@ -69,9 +69,9 @@ enum data_state_names {
 };
 
 enum state_names {
-  HELO_H = 1,
-  HELO_E = 2,
-  HELO_L = 3,
+  H = 1,
+  E = 2,
+  L = 3,
   HELO_O = 4,
 
   EHLO_E = 5,
@@ -199,6 +199,11 @@ enum state_names {
   XSTAT_X = 98,
 
   EQ = 99,
+
+  HELP_P = 100,
+  HELP_CR_STATE = 101,
+  HELP_LF_STATE = 102
+
 };
 
 struct parser * smtp_parser_init(client_state * state);

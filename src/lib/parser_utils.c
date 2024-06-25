@@ -96,6 +96,10 @@ void eqNOOP(struct parser_event *ret, const uint8_t c) {
     type(NOOP_CMP_EQ, ret, c);
 }
 
+void eqHELP(struct parser_event *ret, const uint8_t c) {
+    type(HELP_CMP_EQ, ret, c);
+}
+
 void neqDomain(struct parser_event *ret, const uint8_t c) {
     type(NEQ_DOMAIN, ret, c);
 }
