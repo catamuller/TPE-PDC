@@ -6,6 +6,7 @@ cmake-build-debug
 .idea
 smtpd
 logs
+client_config
 mail_dir/
 monitoring/ip_logs.txt
 monitoring/metrics
