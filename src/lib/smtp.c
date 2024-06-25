@@ -846,7 +846,8 @@ static unsigned server_ehlo(struct selector_key * key) {
     "%1$d - RSET\n"
     "%1$d - NOOP\n"
     "%1$d - QUIT\n"
-    "%1$d - VRFY\n",
+    "%1$d - VRFY\n"
+    "%1$d - XSTAT\n",
     status_action_okay,
     CLIENT_MAIL_FROM
     );
@@ -857,7 +858,7 @@ static unsigned server_rset(struct selector_key * key) {
 }
 
 static unsigned server_noop(struct selector_key * key) {
-    return server_template(key, SERVER_NOOP, "%d - OK\n", status_action_okay, CLIENT_MAIL_FROM);
+    return server_template(key, SERVER_NOOP, "%d - OK\n", status_action_okay, GOTO_PREVIOUS);
 }
 
 static unsigned server_help(struct selector_key * key) {
