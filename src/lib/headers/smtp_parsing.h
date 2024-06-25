@@ -196,6 +196,8 @@ enum state_names {
   RSET_CR_STATE = 96,
   RSET_LF_STATE = 97,
 
+  XSTAT_X = 98,
+
   EQ = 99,
 };
 

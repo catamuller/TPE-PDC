@@ -86,8 +86,8 @@ static const struct parser_state_transition ST_0[] = {
   {.when = 'V',     .dest = VRFY_V,      .act1 = may_eq},
   {.when = 'v',     .dest = VRFY_V,      .act1 = may_eq},
 
-  {.when = 'S',     .dest = STAT_S,      .act1 = may_eq},
-  {.when = 's',     .dest = STAT_S,      .act1 = may_eq},
+  {.when = 'X',     .dest = XSTAT_X,      .act1 = may_eq},
+  {.when = 'x',     .dest = XSTAT_X,      .act1 = may_eq},
 
   {.when = ANY,     .dest = NEQ,         .act1 = neq}
 };
@@ -725,6 +725,14 @@ static const struct parser_state_transition ST_97[] = {
   {.when = ANY,     .dest = RSET_LF_STATE,  .act1 = eqRSET}
 };
 
+static const struct parser_state_transition ST_98[] = {
+  {.when = 'S',     .dest = STAT_S,         .act1 = may_eq},
+  {.when = 's',     .dest = STAT_S,         .act1 = may_eq},
+
+  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+
+};
+
 static const struct parser_state_transition DT_0[] = {
   {.when = '\r',    .dest = DATA_FIRST_CR_STATE, .act1 = CLIENTDATASave},
   {.when = ANY,     .dest = DATA_ANY,     .act1 = CLIENTDATASave}
@@ -852,7 +860,8 @@ size_t states_amount[MAX_STATES] = {
     N(ST_94),
     N(ST_95),
     N(ST_96),
-    N(ST_97)
+    N(ST_97),
+    N(ST_98)
 };
 
 const struct parser_state_transition * states[MAX_STATES] = {
@@ -953,7 +962,8 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_94,
     ST_95,
     ST_96,
-    ST_97
+    ST_97,
+    ST_98
   };
 
 const struct parser_state_transition * data_states[MAX_STATES] = {
