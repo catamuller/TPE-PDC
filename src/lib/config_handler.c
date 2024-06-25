@@ -13,8 +13,8 @@
 #define ERROR (-1)
 #define BUFF_SIZE 256
 
-#define OK "OK\n"
-#define ERR "ERR\n"
+#define OK "OK"
+#define ERR "ERR"
 
 #define QUIT_MSG "QUIT"
 
@@ -109,6 +109,13 @@ int parse_input(const char *input, int *var, int *val) {
     char buff[BUFF_SIZE];
     strncpy(buff, input, BUFF_SIZE - 1);
 
+    for(int i=0; buff[i] != '\0'; i++) {
+        if(buff[i] == '\n') {
+            buff[i] = '\0';
+            break;
+        }
+    }
+
     if(strncasecmp(buff, QUIT_MSG, sizeof(QUIT_MSG)) == 0) {
         *var = QUIT;
         return 0;
@@ -144,6 +151,7 @@ static void set_variable(struct selector_key *key, enum vars variable, int value
             quit(key);
             break;
         default:
+            answer(ERR, sizeof(ERR));
             break;
     }
 }
