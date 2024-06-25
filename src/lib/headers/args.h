@@ -22,7 +22,8 @@ struct smtpargs {
     char *          mng_addr;
     unsigned short  mng_port;
 
-    unsigned short conf_port;
+    char *          conf_addr;
+    unsigned short  conf_port;
 
     bool            disectors_enabled;
 

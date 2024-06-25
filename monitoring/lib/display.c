@@ -3,7 +3,7 @@
 #include "headers/config.h"
 #include "headers/args.h"
 
-void display_metrics(struct metricsargs * args, char* server_status, double ms_delay, int active_connections, int historic_connections, int server_current_connections, int server_total_connections, int server_transferred_bytes) {
+void display_metrics(struct metricsargs * args, char* server_status, double ms_delay, int server_current_connections, int server_total_connections, int server_transferred_bytes) {
 
     system("clear");
 
@@ -19,13 +19,6 @@ void display_metrics(struct metricsargs * args, char* server_status, double ms_d
     printf("\n");
     printf("------------------------------------------------------------------------\n");
     printf("\n");
-    if (args->show_netstat) {
-        printf("Netstat Connections\n");
-        printf("------------------------------------------------------------------------\n");
-        printf("Current: %-30dTotal: %-30d\n", active_connections, historic_connections);
-        printf("------------------------------------------------------------------------\n");
-        printf("\n");
-    }
     printf("Verified Connections\n");
     printf("------------------------------------------------------------------------\n");
     printf("Current: %-30dTotal: %-30d\n", server_current_connections, server_total_connections);

@@ -2,7 +2,9 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <strings.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "headers/config.h"
 #include "headers/connections_server_handler.h"
@@ -71,10 +73,24 @@ int connect_to_server(char * ip, char * port) {
     server_socket = create_connection_socket(ip, port);
 
     if (server_socket == -1) {
+        perror("Failed to create socket.\n");
         return 1;
     }
 
     if (send_request(EHLO_MSG, buff, buff_size) == 1) {
+        perror("Failed to authenticate.\n");
+        return 1;
+    }
+
+    if (send_request(TOTAL_MSG, buff, buff_size) == 1) {
+        perror("XSTAT command failed.\n");
+        return 1;
+    }
+
+    int code = atoi(buff);
+
+    if (code == 500 || code == 502) {
+        perror("The server is not compatible.\n");
         return 1;
     }
 
@@ -143,15 +159,22 @@ double get_ms_delay(void) {
 void retrieve_server_stats(void) {
     size_t buff_size = 256;
     char buff[buff_size];
+    char *token;
 
     if (send_request(CURRENT_MSG, buff, buff_size) == 0) {
-        current_connections = atoi(buff);
+        token = strtok(buff, ":");
+        token = strtok(NULL, ":");
+        current_connections = atoi(token);
     }
     if (send_request(TOTAL_MSG, buff, buff_size) == 0) {
-        total_connections = atoi(buff);
+        token = strtok(buff, ":");
+        token = strtok(NULL, ":");
+        total_connections = atoi(token);
     }
     if (send_request(BYTES_MSG, buff, buff_size) == 0) {
-        transferred_bytes = atoi(buff);
+        token = strtok(buff, ":");
+        token = strtok(NULL, ":");
+        transferred_bytes = atoi(token);
     }
 }
 
