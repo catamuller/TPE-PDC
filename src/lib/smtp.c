@@ -470,7 +470,7 @@ fail:
 //     return ret;
 // }
 
-bool allSpaces(char * str) {
+bool allSpacesOrEmpty(char * str) {
   for(int i=0;str[i];i++)
     if (str[i] != ' ')
       return false;
@@ -494,7 +494,7 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpaces(state->state->user)) {
+                if (allSpacesOrEmpty(state->state->user)) {
                     ret = SERVER_INVALID_HELO_CMD;
                     break;
                 }
@@ -513,7 +513,7 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpaces(state->state->user)) {
+                if (allSpacesOrEmpty(state->state->user)) {
                     ret = SERVER_INVALID_HELO_CMD;
                     break;
                 }
@@ -584,7 +584,7 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpaces(state->state->mailFrom)) {
+                if (allSpacesOrEmpty(state->state->mailFrom)) {
                     ret = SERVER_INVALID_MAIL_CMD;
                     break;
                 }
@@ -608,7 +608,7 @@ static unsigned client_read(struct selector_key * key) {
                 selector_set_interest_key(key, OP_WRITE);
                 buffer_reset(&state->read_buffer);
                 parser_reset(state->smtp_parser);
-                if (allSpaces(state->state->rcptTo[state->state->clientRcptToIndex])) {
+                if (allSpacesOrEmpty(state->state->rcptTo[state->state->clientRcptToIndex])) {
                     ret = SERVER_INVALID_RCPT_CMD;
                     break;
                 }
