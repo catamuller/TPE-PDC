@@ -3,6 +3,8 @@
 
 int init_config_socket(char *ip, int port);
 
-void config_read(struct selector_key *key);
+void accept_connection(struct selector_key *key);
+
+void close_connection(struct selector_key *key);
 
 #endif //TPE_PDC_CONFIG_HANDLER_H

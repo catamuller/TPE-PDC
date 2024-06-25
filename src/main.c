@@ -94,7 +94,7 @@ int main(int argc, char ** argv) {
   };
 
   const struct fd_handler config = {
-    .handle_read = config_read,
+    .handle_read = accept_connection,
     .handle_write = NULL,
     .handle_close = NULL,
   };

@@ -10,14 +10,20 @@
 
 #define ERROR -1
 
+#define BUFF_SIZE 256
+
 enum vars {
     LOGGING=0,
 
     UNKNOWN=-1
 };
 
-static char * variables[] = {"LOGGING"};
-static int v_size = sizeof(variables);
+static char * variables[] = {"LOGGING", NULL};
+
+static int socket_addr = -1;
+static struct sockaddr_in serv_addr;
+
+static char read_buff[BUFF_SIZE];
 
 int init_config_socket(char *ip, int port) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -25,26 +31,18 @@ int init_config_socket(char *ip, int port) {
         return -1;
     }
 
-    struct sockaddr_in serv_addr;
     memset(&serv_addr, 0, sizeof(serv_addr));
 
+    serv_addr.sin_addr.s_addr = inet_addr(ip);
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
+    /*if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
         close(sock);
         return -1;
-    }
+    }*/
 
-    if (bind(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
-        close(sock);
-        return -1;
-    }
-
-    if (listen(sock, SOMAXCONN) == -1) {
-        close(sock);
-        return -1;
-    }
+    socket_addr = sock;
 
     return sock;
 }
@@ -53,7 +51,7 @@ static int parse_variable(char *var) {
     if(var == NULL) {
         return UNKNOWN;
     }
-    for(int i=0; i<v_size; i++) {
+    for(int i=0; variables[i]!=NULL; i++) {
         if(strcasecmp(var, variables[i]) == 0) {
             return i;
         }
@@ -86,11 +84,14 @@ static void set_variable(enum vars variable, int value) {
     }
 }
 
-void config_read(struct selector_key *key) {
-    printf("%s\n", key->data);
-    if(key->data != NULL) {
+void accept_connection(struct selector_key *key) {
+    if (socket_addr == -1)
+        return;
+
+    if(read(socket_addr, read_buff, BUFF_SIZE) > 0) {
         char* token;
-        token = strtok(key->data, "=");
+        printf("%s", read_buff);
+        token = strtok(read_buff, "=");
         if(token == NULL) {
             return;
         }
@@ -106,8 +107,12 @@ void config_read(struct selector_key *key) {
         if(parse_value(token,&value) == ERROR) {
             return;
         }
-
+        printf("%d, %d\n", variable, value);
         set_variable(variable, value);
+        return;
     }
+}
+
+void close_connection(struct selector_key *key) {
 }
 
