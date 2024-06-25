@@ -19,6 +19,7 @@
 char domain[BUFFER_MAX_SIZE] = "smtp.com";
 struct parser_state_transition * domain_states[100] = {0};
 static struct parser_state_transition STATE_DOMAIN_CR[] = {
+      {.when = '<',           .dest = 1,  .act1 = may_eq},
       {.when = '\r',          .dest = 1,        .act1 = may_eq},
 
       {.when = ANY,           .dest = WRONG_DOMAIN,         .act1 = neq}
@@ -37,7 +38,8 @@ struct parser_state_transition STATE_ACCEPT[] = {
 
 
 void setCRDest(int index) {
-  STATE_DOMAIN_CR[0].dest = index;
+  STATE_DOMAIN_CR[0].dest = index-1;
+  STATE_DOMAIN_CR[1].dest = index;
 }
 
 void setLFDest(int index) {
@@ -451,7 +453,6 @@ static const struct parser_state_transition ST_51[] = {
 static const struct parser_state_transition ST_52[] = {
   {.when = '@',     .dest = MAX_STATES-100,      .act1 =  MAILFROMSave},
   {.when = '<',     .dest = FROM_SPACE,  .act1 = may_eq},
-  {.when = '>',     .dest = FROM_SPACE,  .act1 = may_eq},
   {.when = '\r',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = '\n',    .dest = WRONG_DOMAIN,          .act1 = neqDomain},
   {.when = ANY,     .dest = FROM_SPACE,          .act1 = MAILFROMSave}
