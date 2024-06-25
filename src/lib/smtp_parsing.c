@@ -732,7 +732,13 @@ static const struct parser_state_transition ST_98[] = {
   {.when = 'S',     .dest = STAT_S,         .act1 = may_eq},
   {.when = 's',     .dest = STAT_S,         .act1 = may_eq},
 
-  {.when = ANY,     .dest = NEQ,          .act1 = neq}
+  {.when = ANY,     .dest = CMD_NEQ,          .act1 = neqCMD}
+
+};
+
+static const struct parser_state_transition ST_99[] = {
+
+  {.when = ANY,     .dest = CMD_NEQ,          .act1 = neqCMD}
 
 };
 
@@ -885,6 +891,7 @@ size_t states_amount[MAX_STATES] = {
     N(ST_96),
     N(ST_97),
     N(ST_98),
+    N(ST_99),
     N(ST_100),
     N(ST_101),
     N(ST_102)
@@ -990,6 +997,7 @@ const struct parser_state_transition * states[MAX_STATES] = {
     ST_96,
     ST_97,
     ST_98,
+    ST_99,
     ST_100,
     ST_101,
     ST_102

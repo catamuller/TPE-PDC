@@ -34,7 +34,9 @@ enum string_cmp_event_types {
     HELP_CMP_EQ,
     RCPTTOSAVE_CMP_EQ,
     MAILFROMSAVE_CMP_EQ,
-    DATASAVE_CMP_EQ
+    DATASAVE_CMP_EQ,
+
+    CMD_CMP_NEQ,
 };
 
 void may_eq(struct parser_event *ret, const uint8_t c);
@@ -83,6 +85,8 @@ void CLIENTDATASave(struct parser_event *ret, const uint8_t c);
 void neq(struct parser_event *ret, const uint8_t c);
 
 void neqDomain(struct parser_event *ret, const uint8_t c);
+
+void neqCMD(struct parser_event *ret, const uint8_t c);
 const char *
 parser_utils_strcmpi_event(const enum string_cmp_event_types type);
 

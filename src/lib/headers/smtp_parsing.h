@@ -197,8 +197,7 @@ enum state_names {
   RSET_LF_STATE = 97,
 
   XSTAT_X = 98,
-
-  EQ = 99,
+  CMD_NEQ = 99,
 
   HELP_P = 100,
   HELP_CR_STATE = 101,
