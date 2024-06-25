@@ -87,6 +87,14 @@ static int parse_variable(char *var) {
     return UNKNOWN;
 }
 
+static int parse_value(char *value) {
+    for(int i=0; value[i]!='\0'; i++) {
+        if(value[i] < '0' || value[i] > '9')
+            return ERROR;
+    }
+    return 0;
+}
+
 
 static void answer(char* msg, size_t msg_size) {
     if(socket_addr == -1) {
@@ -132,6 +140,10 @@ int parse_input(const char *input, int *var, int *val) {
     token = strtok(NULL, "=");
 
     if (token == NULL) {
+        return ERROR;
+    }
+
+    if (parse_value(token) == ERROR) {
         return ERROR;
     }
 

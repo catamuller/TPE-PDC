@@ -16,7 +16,6 @@ static void usage(const char *progname) {
             "   -h               Imprime la ayuda y termina.\n"
             "   -i <addr>        Define a qué ip el cliente intentará conectarse (Default en config.h).\n"
             "   -P <port>        Define a que puerto el cliente intentará conectarse (Default en config.h).\n"
-            "   -n               Activa el seguimiento de conexiones con netsat.\n"
             "   -v               Imprime información sobre la versión en la terminal.\n"
             "\n",
             progname);
@@ -40,7 +39,7 @@ void parse_args(const int argc, char **argv, struct metricsargs *args) {
                 { 0,           0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "hi:P:vn", long_options, &option_index);
+        c = getopt_long(argc, argv, "hi:P:v", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -56,9 +55,6 @@ void parse_args(const int argc, char **argv, struct metricsargs *args) {
                 break;
             case 'v':
                 args->show_version = true;
-                break;
-            case 'n':
-                args->show_netstat = true;
                 break;
             default:
                 fprintf(stderr, "unknown argument %d.\n", c);
