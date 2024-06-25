@@ -3,7 +3,7 @@
 #include "headers/config.h"
 #include "headers/args.h"
 
-void display_metrics(struct metricsargs * args, char* server_status, double ms_delay, int server_current_connections, int server_total_connections, int server_transferred_bytes) {
+void display_metrics(struct metricsargs * args, char* server_status, double ms_delay, int server_current_connections, int server_total_connections, int server_transferred_bytes, int sent_mails) {
 
     system("clear");
 
@@ -16,6 +16,7 @@ void display_metrics(struct metricsargs * args, char* server_status, double ms_d
     printf("SERVER STATUS: %s\n", server_status);
     printf("DELAY: %.3fms\n", ms_delay);
     printf("BYTES TRANSFERRED: %d\n", server_transferred_bytes);
+    printf("MAILS SENT: %d\n", sent_mails);
     printf("\n");
     printf("------------------------------------------------------------------------\n");
     printf("\n");

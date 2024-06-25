@@ -18,6 +18,7 @@
 #define TOTAL_MSG "XSTAT total" CRLF
 #define CURRENT_MSG "XSTAT current" CRLF
 #define BYTES_MSG "XSTAT bytes" CRLF
+#define MAILS_MSG "XSTAT mails" CRLF
 
 #define QUIT_MSG "QUIT" CRLF
 
@@ -36,6 +37,7 @@ double ms_delay = 0.0;
 int current_connections = 0;
 int total_connections = 0;
 int transferred_bytes = 0;
+int sent_mails = 0;
 
 
 static int create_connection_socket(char * ip, char * port){
@@ -176,6 +178,11 @@ void retrieve_server_stats(void) {
         token = strtok(NULL, ":");
         transferred_bytes = atoi(token);
     }
+    if (send_request(MAILS_MSG, buff, buff_size) == 0) {
+        token = strtok(buff, ":");
+        token = strtok(NULL, ":");
+        sent_mails = atoi(token);
+    }
 }
 
 int get_server_current_connections(void) {
@@ -189,3 +196,8 @@ int get_server_total_connections(void) {
 int get_server_transferred_bytes(void) {
     return transferred_bytes;
 }
+
+int get_server_sent_mails(void) {
+    return sent_mails;
+}
+
