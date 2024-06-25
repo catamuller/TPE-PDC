@@ -19,7 +19,7 @@
 char domain[BUFFER_MAX_SIZE] = "smtp.com";
 struct parser_state_transition * domain_states[100] = {0};
 static struct parser_state_transition STATE_DOMAIN_CR[] = {
-      {.when = '<',           .dest = 1,  .act1 = may_eq},
+      {.when = '>',           .dest = 1,  .act1 = may_eq},
       {.when = '\r',          .dest = 1,        .act1 = may_eq},
 
       {.when = ANY,           .dest = WRONG_DOMAIN,         .act1 = neq}
