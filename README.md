@@ -24,7 +24,9 @@ Una vez compilado se creará el archivo smtpd dentro de la carpeta /src. Para ej
 ./smtpd
 ```
 
-Luego, ir a la carpeta /config y repetir el comando:
+## Ejecución del cliente de configuración
+
+Ir a la carpeta /config y repetir el comando:
 
 ```
 make clean all
@@ -36,7 +38,9 @@ Se creara el binario client_config que se ejecuta con:
 ./client_config
 ```
 
-Por ultimo se deben repetir los pasos anteriores en la carpeta /monitoring, ejecutando:
+## Ejecución del cliente de métricas
+
+Ir a la carpeta /monitoring, ejecutando:
 
 ```
 make clean all
