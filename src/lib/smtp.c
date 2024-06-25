@@ -734,15 +734,16 @@ static unsigned server_help(struct selector_key * key) {
     return server_template(key,
         SERVER_HELP,
         "%d - OK\n"
-        "HELO\n"
-        "EHLO\n"
-        "MAIL\n"
-        "RCPT\n"
+        "HELO <hostname>\n"
+        "EHLO <hostname>\n"
+        "MAIL FROM: <user@domain>\n"
+        "RCPT TO: <recipient>\n"
         "DATA\n"
         "RSET\n"
         "NOOP\n"
         "QUIT\n"
-        "VRFY\n",
+        "VRFY\n"
+        "XSTAT <TOTAL|CURRENT|BYTES>\n",
         status_action_okay,
         GOTO_PREVIOUS
     );
