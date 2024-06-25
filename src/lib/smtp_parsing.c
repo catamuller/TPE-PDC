@@ -1381,12 +1381,35 @@ int KMPSearch(char *query, char *target) {
     return -1;
 
 }
+int KMPSearchV2(char *query, char *target) {
+    int qlen = strlen(query);
+    int tlen = strlen(target);
+    int pquery=0, rec=0;
 
+    while(rec<tlen && pquery<qlen) {
+        if(target[rec] == query[pquery]){
+            rec++;
+            pquery++;
+        } else {
+            if (pquery==0){
+              rec++;
+            }
+            else {
+              pquery = 0;
+            }
+        }
+
+    }
+    if (pquery == qlen){
+        return rec-pquery;
+    }
+    return -1;
+}
 
 
 void parseSubject(client_state * state) {
   strcpy(state->subject, "EMPTY");
-  int index = KMPSearch("Subject:", state->data);
+  int index = KMPSearchV2("Subject:", state->data);
   if (index == -1)
     return;
   int i = 0;
