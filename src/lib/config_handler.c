@@ -109,7 +109,6 @@ int parse_input(const char *input, int *var, int *val) {
     char buff[BUFF_SIZE];
     strncpy(buff, input, BUFF_SIZE - 1);
 
-    printf("%s = %s\n", buff, QUIT_MSG);
     if(strncasecmp(buff, QUIT_MSG, sizeof(QUIT_MSG)) == 0) {
         *var = QUIT;
         return 0;

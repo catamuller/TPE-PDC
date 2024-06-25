@@ -13,9 +13,9 @@
 
 #define CHECK_MSG "NOOP" CRLF
 
-#define TOTAL_MSG "STAT total" CRLF
-#define CURRENT_MSG "STAT current" CRLF
-#define BYTES_MSG "STAT bytes" CRLF
+#define TOTAL_MSG "XSTAT total" CRLF
+#define CURRENT_MSG "XSTAT current" CRLF
+#define BYTES_MSG "XSTAT bytes" CRLF
 
 #define QUIT_MSG "QUIT" CRLF
 
