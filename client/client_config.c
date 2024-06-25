@@ -36,12 +36,13 @@ int parse_promt(char* command_buffer){
         printf("Bye Bye\n");
         return -1;
     }
-    else if(strcasecmp(token,"HELP\n")==0){
+    if(strcasecmp(token,"HELP\n")==0){
         display_help();
-        return 0;
+        return 1;
     }
-    if(token==NULL){
-        printf("Invalid command format");
+
+    if(token==NULL||strcasecmp(token,"logging")!=0){
+        printf("Invalid command format\n");
         return 1;
     }
     token=strtok(NULL,delim);
@@ -70,7 +71,7 @@ int main(int argc, char** argv){
 
     char server_command[BUFF_COMMAND_SIZE];
 
-
+    printf("\n>");
     while(fgets(command_buffer, BUFF_COMMAND_SIZE, stdin)!=NULL){
 
 
@@ -84,6 +85,7 @@ int main(int argc, char** argv){
         goto exit;
     }
     else if(parse_result==1){
+        printf("\n>");
         continue;
     }
     if (send(socket_fd,server_command,strlen(server_command),0)<0 ){
@@ -98,15 +100,14 @@ int main(int argc, char** argv){
     }
 
     command_buffer[received]='\0';
-    printf("Server response: %s\n",command_buffer);
+    printf("Server response: %s\n>",command_buffer);
     }
 
     exit:
         close(socket_fd);
         return 0;
-    final:
-        return 1;
     connection_error:
         close(socket_fd);
+    final:
         return 1;
 }
