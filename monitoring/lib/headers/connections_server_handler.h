@@ -8,7 +8,7 @@ int connect_to_server(char * ip, char * port);
 
 void close_connection(void);
 
-int send_request(char* msg, char* buff, size_t buff_size);
+int send_request(char* msg);
 
 void check_server_status(void);
 

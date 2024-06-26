@@ -9,6 +9,8 @@
 #include "headers/config.h"
 #include "headers/connections_server_handler.h"
 
+#define BUFF_SIZE 256
+
 #define CRLF "\r\n"
 #define CLIENT_NAME "metrics_client"
 #define EHLO_MSG "EHLO " CLIENT_NAME CRLF
@@ -38,6 +40,8 @@ int current_connections = 0;
 int total_connections = 0;
 int transferred_bytes = 0;
 int sent_mails = 0;
+
+char buff[BUFF_SIZE] = {'\0'};
 
 
 static int create_connection_socket(char * ip, char * port){
@@ -69,8 +73,6 @@ static int create_connection_socket(char * ip, char * port){
 }
 
 int connect_to_server(char * ip, char * port) {
-    size_t buff_size = 256;
-    char buff[buff_size];
 
     server_socket = create_connection_socket(ip, port);
 
@@ -79,12 +81,12 @@ int connect_to_server(char * ip, char * port) {
         return 1;
     }
 
-    if (send_request(EHLO_MSG, buff, buff_size) == 1) {
+    if (send_request(EHLO_MSG) == 1) {
         perror("Failed to authenticate.\n");
         return 1;
     }
 
-    if (send_request(TOTAL_MSG, buff, buff_size) == 1) {
+    if (send_request(TOTAL_MSG) == 1) {
         perror("XSTAT command failed.\n");
         return 1;
     }
@@ -103,14 +105,12 @@ int connect_to_server(char * ip, char * port) {
 
 void close_connection(void) {
     if (server_socket != -1) {
-        size_t buff_size = 256;
-        char buff[buff_size];
-        send_request(QUIT_MSG, buff, buff_size);
+        send_request(QUIT_MSG);
         close(server_socket);
     }
 }
 
-int send_request(char* msg, char* buff, size_t buff_size) {
+int send_request(char* msg) {
     if (server_socket == -1) {
         server_status = OFF;
         return 1;
@@ -122,7 +122,7 @@ int send_request(char* msg, char* buff, size_t buff_size) {
         return 1;
     }
 
-    int bytes_received = recv(server_socket, buff, buff_size - 1, 0);
+    int bytes_received = recv(server_socket, buff, BUFF_SIZE - 1, 0);
     if (bytes_received <= 0) {
         server_status = OFF;
         return 1;
@@ -134,12 +134,10 @@ int send_request(char* msg, char* buff, size_t buff_size) {
 }
 
 void check_server_status(void) {
-    size_t buff_size = 256;
-    char buff[buff_size];
 
     clock_t start_time = clock();
 
-    if (send_request(CHECK_MSG, buff, buff_size) == 1) {
+    if (send_request(CHECK_MSG) == 1) {
         server_status = OFF;
     } else {
         server_status = ON;
@@ -159,29 +157,35 @@ double get_ms_delay(void) {
 }
 
 void retrieve_server_stats(void) {
-    size_t buff_size = 256;
-    char buff[buff_size];
     char *token;
 
-    if (send_request(CURRENT_MSG, buff, buff_size) == 0) {
+    if (send_request(CURRENT_MSG) == 0) {
         token = strtok(buff, ":");
         token = strtok(NULL, ":");
-        current_connections = atoi(token);
+        if(token != NULL) {
+            current_connections = atoi(token);
+        }
     }
-    if (send_request(TOTAL_MSG, buff, buff_size) == 0) {
+    if (send_request(TOTAL_MSG) == 0) {
         token = strtok(buff, ":");
         token = strtok(NULL, ":");
-        total_connections = atoi(token);
+        if(token != NULL) {
+            total_connections = atoi(token);
+        }
     }
-    if (send_request(BYTES_MSG, buff, buff_size) == 0) {
+    if (send_request(BYTES_MSG) == 0) {
         token = strtok(buff, ":");
         token = strtok(NULL, ":");
-        transferred_bytes = atoi(token);
+        if(token != NULL) {
+            transferred_bytes = atoi(token);
+        }
     }
-    if (send_request(MAILS_MSG, buff, buff_size) == 0) {
+    if (send_request(MAILS_MSG) == 0) {
         token = strtok(buff, ":");
         token = strtok(NULL, ":");
-        sent_mails = atoi(token);
+        if(token != NULL) {
+            sent_mails = atoi(token);
+        }
     }
 }
 
