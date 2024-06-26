@@ -91,7 +91,14 @@ int connect_to_server(char * ip, char * port) {
         return 1;
     }
 
+    //si la respuesta fue exitosa, "tapo" el numero de conexiones para solo leer un posible codigo de error
+    char aux = buff[15];
+    buff[15] = '\0';
+
+    //busco solo el primer valor, en caso de que XSTAT no este implementado
     int code = atoi(buff);
+
+    buff[15] = aux;
 
     if (code == 500 || code == 502) {
         perror("The server is not compatible.\n");
@@ -159,6 +166,7 @@ double get_ms_delay(void) {
 void retrieve_server_stats(void) {
     char *token;
 
+    //atoi me perimte solo conseguir el valor de respuesta
     if (send_request(CURRENT_MSG) == 0) {
         token = strtok(buff, ":");
         token = strtok(NULL, ":");
